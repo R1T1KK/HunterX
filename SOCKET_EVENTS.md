@@ -30,9 +30,20 @@ const socket = io("https://api.hiderush.fun", {
 | **Room** | `room:leave` | Client $\rightarrow$ Server | Player voluntarily departs room |
 | **Room** | `room:player-joined` | Server $\rightarrow$ Client | Real-time broadcast to room when new player joins |
 | **Room** | `room:player-left` | Server $\rightarrow$ Client | Real-time broadcast to room when player leaves |
-| **Room** | `room:state-updated` | Server $\rightarrow$ Client | Full snapshot of room players and status |
+| **Room** | `room:regenerate-code` | Client $\rightarrow$ Server | Host requests a fresh 6-char room code |
+| **Room** | `room:code-regenerated` | Server $\rightarrow$ Client | Broadcast informing all room members of the new room code |
+| **Room** | `room:state-updated` | Server $\rightarrow$ Client | Full snapshot of room players, rules, roles, and status |
 | **Room** | `room:error` | Server $\rightarrow$ Client | Error notifications (e.g. ROOM_NOT_FOUND, ROOM_FULL) |
-| **Lobby** | `lobby:settings_update` | Bidirectional | Host modifies hunter count or timer |
+| **Lobby** | `room:update-rules` | Client $\rightarrow$ Server | Host updates preset or custom house rules |
+| **Lobby** | `room:settings-updated` | Server $\rightarrow$ Client | Real-time broadcast when house rules are updated |
+| **Lobby** | `room:update-role-settings` | Client $\rightarrow$ Server | Host updates Hunter count and role preference |
+| **Lobby** | `room:role-settings-updated` | Server $\rightarrow$ Client | Real-time broadcast of updated role settings |
+| **Lobby** | `room:update-ready` | Client $\rightarrow$ Server | Player toggles ready state |
+| **Lobby** | `room:player-ready-updated` | Server $\rightarrow$ Client | Broadcast of player's updated ready state |
+| **Lobby** | `room:update-gps-status` | Client $\rightarrow$ Server | Mobile device sends its 4-state GPS status |
+| **Lobby** | `room:gps-status-updated` | Server $\rightarrow$ Client | Broadcast of player's GPS lock status |
+| **Lobby** | `room:start-game` | Client $\rightarrow$ Server | Host initiates match start (validates $\ge 2$ GPS locks) |
+| **Lobby** | `room:game-started` | Server $\rightarrow$ Client | Broadcast notifying match launch |
 | **Game** | `game:start_countdown` | Server $\rightarrow$ Client | 30s scatter timer commences |
 | **Game** | `game:started` | Server $\rightarrow$ Client | Active match starts; map unlocks |
 | **Game** | `game:timer_tick` | Server $\rightarrow$ Client | 1-second countdown broadcast |

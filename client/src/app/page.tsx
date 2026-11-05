@@ -1,23 +1,67 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { getSocket } from "@/services/socketService";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
-import { Room, SocketErrorPayload } from "@/types";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { Room, HouseRules, RoleSettings, SocketErrorPayload, GPSStatus } from "@/types";
 import { HomeScreen } from "@/components/home/HomeScreen";
-import { WaitingRoom } from "@/components/lobby/WaitingRoom";
+import { GameLobbyScreen } from "@/components/lobby/GameLobbyScreen";
 import { BottomNav, NavTab } from "@/components/navigation/BottomNav";
 import { StatsView } from "@/components/views/StatsView";
 import { RulesView } from "@/components/views/RulesView";
 import { ProfileView } from "@/components/views/ProfileView";
 
-export default function AppRoot() {
+function MainGameApp() {
   const { playerId, callsign, updateCallsign, isLoaded } = usePlayerProfile();
+  const searchParams = useSearchParams();
+
   const [activeTab, setActiveTab] = useState<NavTab>("play");
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [isHostLoading, setIsHostLoading] = useState(false);
   const [isJoinLoading, setIsJoinLoading] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Active GPS tracking
+  const { status: localGpsStatus } = useGeolocation((newStatus: GPSStatus) => {
+    if (currentRoom && playerId) {
+      const socket = getSocket();
+      socket.emit("room:update-gps-status", {
+        roomCode: currentRoom.roomCode,
+        playerId,
+        gpsStatus: newStatus,
+      });
+    }
+  });
+
+  // Sync initial GPS status on room join/create
+  useEffect(() => {
+    if (currentRoom && playerId && localGpsStatus) {
+      const socket = getSocket();
+      socket.emit("room:update-gps-status", {
+        roomCode: currentRoom.roomCode,
+        playerId,
+        gpsStatus: localGpsStatus,
+      });
+    }
+  }, [currentRoom, playerId, localGpsStatus]);
+
+  // Handle invitation URL query param (?code=TACO42)
+  useEffect(() => {
+    const inviteCode = searchParams.get("code");
+    if (inviteCode && inviteCode.length === 6 && !currentRoom && isLoaded) {
+      const socket = getSocket();
+      setIsJoinLoading(true);
+      socket.emit("room:join", {
+        roomCode: inviteCode.toUpperCase().trim(),
+        playerId,
+        callsign,
+      });
+    }
+  }, [searchParams, currentRoom, isLoaded, playerId, callsign]);
 
   // Socket event subscriptions
   useEffect(() => {
@@ -38,12 +82,10 @@ export default function AppRoot() {
     };
 
     const handlePlayerJoined = (data: { room: Room }) => {
-      console.log("👥 Other player joined room:", data.room.players.length);
       setCurrentRoom(data.room);
     };
 
     const handlePlayerLeft = (data: { room: Room | null }) => {
-      console.log("👋 Player left room, remaining:", data.room?.players.length);
       if (data.room) {
         setCurrentRoom(data.room);
       } else {
@@ -51,8 +93,21 @@ export default function AppRoot() {
       }
     };
 
+    const handleCodeRegenerated = (data: { oldCode: string; newCode: string; room: Room }) => {
+      console.log(`🔄 Room code regenerated: ${data.oldCode} -> ${data.newCode}`);
+      setCurrentRoom(data.room);
+      setIsRegenerating(false);
+    };
+
     const handleStateUpdated = (data: { room: Room }) => {
       setCurrentRoom(data.room);
+      setIsStarting(false);
+    };
+
+    const handleGameStarted = (data: { room: Room }) => {
+      console.log("🚀 Game started event received!", data.room.roomCode);
+      setCurrentRoom(data.room);
+      setIsStarting(false);
     };
 
     const handleRoomError = (error: SocketErrorPayload) => {
@@ -60,13 +115,17 @@ export default function AppRoot() {
       setErrorMessage(error.message || "An unexpected error occurred.");
       setIsHostLoading(false);
       setIsJoinLoading(false);
+      setIsRegenerating(false);
+      setIsStarting(false);
     };
 
     socket.on("room:created", handleRoomCreated);
     socket.on("room:joined", handleRoomJoined);
     socket.on("room:player-joined", handlePlayerJoined);
     socket.on("room:player-left", handlePlayerLeft);
+    socket.on("room:code-regenerated", handleCodeRegenerated);
     socket.on("room:state-updated", handleStateUpdated);
+    socket.on("room:game-started", handleGameStarted);
     socket.on("room:error", handleRoomError);
 
     return () => {
@@ -74,7 +133,9 @@ export default function AppRoot() {
       socket.off("room:joined", handleRoomJoined);
       socket.off("room:player-joined", handlePlayerJoined);
       socket.off("room:player-left", handlePlayerLeft);
+      socket.off("room:code-regenerated", handleCodeRegenerated);
       socket.off("room:state-updated", handleStateUpdated);
+      socket.off("room:game-started", handleGameStarted);
       socket.off("room:error", handleRoomError);
     };
   }, []);
@@ -87,7 +148,6 @@ export default function AppRoot() {
     const socket = getSocket();
     socket.emit("room:create", { playerId, callsign });
 
-    // Safety timeout in case backend is unresponsive
     setTimeout(() => {
       setIsHostLoading((loading) => {
         if (loading) {
@@ -96,7 +156,7 @@ export default function AppRoot() {
         }
         return false;
       });
-    }, 5000);
+    }, 6000);
   }, [playerId, callsign, isHostLoading]);
 
   const handleJoinGame = useCallback(
@@ -112,7 +172,6 @@ export default function AppRoot() {
         callsign,
       });
 
-      // Safety timeout
       setTimeout(() => {
         setIsJoinLoading((loading) => {
           if (loading) {
@@ -121,7 +180,7 @@ export default function AppRoot() {
           }
           return false;
         });
-      }, 5000);
+      }, 6000);
     },
     [playerId, callsign, isJoinLoading]
   );
@@ -138,6 +197,71 @@ export default function AppRoot() {
     setCurrentRoom(null);
   }, [currentRoom, playerId]);
 
+  const handleRegenerateCode = useCallback(async () => {
+    if (!currentRoom || !playerId || isRegenerating) return;
+    setIsRegenerating(true);
+
+    const socket = getSocket();
+    socket.emit("room:regenerate-code", {
+      oldCode: currentRoom.roomCode,
+      requesterPlayerId: playerId,
+    });
+  }, [currentRoom, playerId, isRegenerating]);
+
+  const handleUpdateRules = useCallback(
+    (rulesUpdate: Partial<HouseRules>) => {
+      if (!currentRoom || !playerId) return;
+
+      const socket = getSocket();
+      socket.emit("room:update-rules", {
+        roomCode: currentRoom.roomCode,
+        requesterPlayerId: playerId,
+        rules: rulesUpdate,
+      });
+    },
+    [currentRoom, playerId]
+  );
+
+  const handleUpdateRoleSettings = useCallback(
+    (settings: RoleSettings) => {
+      if (!currentRoom || !playerId) return;
+
+      const socket = getSocket();
+      socket.emit("room:update-role-settings", {
+        roomCode: currentRoom.roomCode,
+        requesterPlayerId: playerId,
+        roleSettings: settings,
+      });
+    },
+    [currentRoom, playerId]
+  );
+
+  const handleToggleReady = useCallback(
+    (isReady: boolean) => {
+      if (!currentRoom || !playerId) return;
+
+      const socket = getSocket();
+      socket.emit("room:update-ready", {
+        roomCode: currentRoom.roomCode,
+        playerId,
+        isReady,
+      });
+    },
+    [currentRoom, playerId]
+  );
+
+  const handleStartGame = useCallback(async () => {
+    if (!currentRoom || !playerId || isStarting) return;
+    setIsStarting(true);
+    setErrorMessage(null);
+
+    const socket = getSocket();
+    socket.emit("room:start-game", {
+      roomCode: currentRoom.roomCode,
+      requesterPlayerId: playerId,
+    });
+  }, [currentRoom, playerId, isStarting]);
+
   if (!isLoaded) {
     return (
       <div className="flex-1 flex items-center justify-center text-xs text-game-text-muted">
@@ -146,18 +270,27 @@ export default function AppRoot() {
     );
   }
 
-  // If in an active waiting room, render the waiting room (takes priority over home tabs)
+  // Active Room -> Game Lobby Screen
   if (currentRoom) {
     return (
-      <WaitingRoom
+      <GameLobbyScreen
         room={currentRoom}
         currentPlayerId={playerId}
         onLeaveRoom={handleLeaveRoom}
+        onRegenerateCode={handleRegenerateCode}
+        onUpdateRules={handleUpdateRules}
+        onUpdateRoleSettings={handleUpdateRoleSettings}
+        onToggleReady={handleToggleReady}
+        onStartGame={handleStartGame}
+        isRegenerating={isRegenerating}
+        isStarting={isStarting}
+        errorMessage={errorMessage}
+        onClearError={() => setErrorMessage(null)}
       />
     );
   }
 
-  // Otherwise render active navigation tab
+  // Standalone Navigation Views
   return (
     <>
       {activeTab === "play" && (
@@ -187,5 +320,13 @@ export default function AppRoot() {
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </>
+  );
+}
+
+export default function AppRoot() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex items-center justify-center text-xs text-game-text-muted">Loading HIDERUSH...</div>}>
+      <MainGameApp />
+    </Suspense>
   );
 }

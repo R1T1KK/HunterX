@@ -6,15 +6,38 @@ export interface HealthResponse {
   environment: string;
 }
 
+export type GPSStatus = "LOCKED" | "ACQUIRING" | "UNAVAILABLE" | "DENIED";
+
 export interface Player {
   playerId: string;
   socketId: string;
   callsign: string;
   joinedAt: string;
   isHost: boolean;
+  isReady: boolean;
+  gpsStatus: GPSStatus;
 }
 
 export type RoomStatus = "WAITING" | "STARTING" | "IN_PROGRESS" | "COMPLETED";
+
+export type RulesPreset = "QUICK" | "STANDARD" | "BIG_PARK" | "CUSTOM";
+
+export interface HouseRules {
+  preset: RulesPreset;
+  roundLengthMinutes: number; // 5, 10, 15, 20
+  headStartSeconds: number; // 15, 30, 60, 90
+  pingIntervalSeconds: number; // 30, 60, 90, 120
+  playZoneEnabled: boolean;
+  zoneSizeMeters: number; // e.g. 250, 420, 500, 1000
+  zoneShrinks: boolean;
+  zoneShrinkIntervalMinutes: number; // e.g. 5
+  huntersCanTalk: boolean;
+}
+
+export interface RoleSettings {
+  hunterCount: number; // 1, 2, 3
+  mode: "HUNTER" | "RUNNER" | "RANDOM";
+}
 
 export interface Room {
   roomCode: string;
@@ -24,6 +47,8 @@ export interface Room {
   status: RoomStatus;
   maxPlayers: number;
   players: Player[];
+  rules: HouseRules;
+  roleSettings: RoleSettings;
 }
 
 export interface RoomOperationResult {
@@ -32,4 +57,9 @@ export interface RoomOperationResult {
   wasHost: boolean;
   newHostId?: string;
   isEmpty: boolean;
+}
+
+export interface SocketErrorPayload {
+  code: string;
+  message: string;
 }

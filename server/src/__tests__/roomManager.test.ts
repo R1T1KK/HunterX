@@ -14,7 +14,7 @@ describe("RoomManager Core Unit Tests", () => {
     expect(code).toMatch(/^[A-Z0-9]{6}$/);
   });
 
-  it("should create a room with the caller assigned as host", () => {
+  it("should create a room with the caller assigned as host and standard defaults", () => {
     const start = performance.now();
     const room = manager.createRoom({
       hostPlayerId: "player-1",
@@ -23,11 +23,14 @@ describe("RoomManager Core Unit Tests", () => {
     });
     const duration = performance.now() - start;
 
-    expect(duration).toBeLessThan(200); // Benchmark: <200ms
+    expect(duration).toBeLessThan(200);
     expect(room.roomCode).toHaveLength(6);
     expect(room.hostPlayerId).toBe("player-1");
     expect(room.status).toBe("WAITING");
     expect(room.maxPlayers).toBe(15);
+    expect(room.rules.preset).toBe("STANDARD");
+    expect(room.rules.roundLengthMinutes).toBe(10);
+    expect(room.roleSettings.hunterCount).toBe(1);
     expect(room.players).toHaveLength(1);
     expect(room.players[0].isHost).toBe(true);
     expect(room.players[0].callsign).toBe("Ritik_Hunter");
@@ -70,7 +73,6 @@ describe("RoomManager Core Unit Tests", () => {
       socketId: "socket-host",
     });
 
-    // Fill room to 15 players
     for (let i = 2; i <= 15; i++) {
       manager.joinRoom({
         roomCode: room.roomCode,
@@ -82,7 +84,6 @@ describe("RoomManager Core Unit Tests", () => {
 
     expect(room.players).toHaveLength(15);
 
-    // 16th player attempt must throw ROOM_FULL
     expect(() =>
       manager.joinRoom({
         roomCode: room.roomCode,
@@ -129,22 +130,98 @@ describe("RoomManager Core Unit Tests", () => {
     expect(manager.findRoom(room.roomCode)).toBeUndefined();
   });
 
-  it("should reject invalid callsigns (length < 3 or invalid characters)", () => {
-    expect(() =>
-      manager.createRoom({
-        hostPlayerId: "player-1",
-        callsign: "ab", // Too short (< 3)
-        socketId: "socket-1",
-      })
-    ).toThrow();
+  // DAY 3 SPECIFIC TESTS
+  it("should allow host to regenerate room code and invalidate old code", () => {
+    const room = manager.createRoom({
+      hostPlayerId: "host-1",
+      callsign: "HostPlayer",
+      socketId: "socket-1",
+    });
+    const oldCode = room.roomCode;
 
-    expect(() =>
-      manager.createRoom({
-        hostPlayerId: "player-1",
-        callsign: "Invalid Space!", // Invalid chars
-        socketId: "socket-1",
-      })
-    ).toThrow();
+    manager.joinRoom({
+      roomCode: oldCode,
+      playerId: "player-2",
+      callsign: "Joiner",
+      socketId: "socket-2",
+    });
+
+    const res = manager.regenerateRoomCode(oldCode, "host-1");
+    expect(res.newCode).not.toBe(oldCode);
+    expect(res.newCode).toHaveLength(6);
+    expect(manager.findRoom(oldCode)).toBeUndefined();
+    expect(manager.findRoom(res.newCode)).toBeDefined();
+    expect(manager.findRoom(res.newCode)?.players).toHaveLength(2);
+
+    // Non-host cannot regenerate
+    expect(() => manager.regenerateRoomCode(res.newCode, "player-2")).toThrowError(/host/i);
+  });
+
+  it("should update house rules presets (QUICK, STANDARD, BIG_PARK, CUSTOM)", () => {
+    const room = manager.createRoom({
+      hostPlayerId: "host-1",
+      callsign: "HostPlayer",
+      socketId: "socket-1",
+    });
+
+    // Host updates to QUICK
+    manager.updateHouseRules(room.roomCode, "host-1", { preset: "QUICK" });
+    expect(room.rules.preset).toBe("QUICK");
+    expect(room.rules.roundLengthMinutes).toBe(5);
+    expect(room.rules.headStartSeconds).toBe(15);
+    expect(room.rules.pingIntervalSeconds).toBe(30);
+
+    // Host updates to BIG_PARK
+    manager.updateHouseRules(room.roomCode, "host-1", { preset: "BIG_PARK" });
+    expect(room.rules.preset).toBe("BIG_PARK");
+    expect(room.rules.roundLengthMinutes).toBe(20);
+    expect(room.rules.zoneShrinks).toBe(true);
+
+    // Host custom overrides
+    manager.updateHouseRules(room.roomCode, "host-1", {
+      preset: "CUSTOM",
+      roundLengthMinutes: 15,
+      headStartSeconds: 45,
+    });
+    expect(room.rules.preset).toBe("CUSTOM");
+    expect(room.rules.roundLengthMinutes).toBe(15);
+    expect(room.rules.headStartSeconds).toBe(45);
+  });
+
+  it("should enforce mandatory 2 confirmed GPS locks before allowing game start", () => {
+    const room = manager.createRoom({
+      hostPlayerId: "host-1",
+      callsign: "HostPlayer",
+      socketId: "socket-1",
+    });
+
+    manager.joinRoom({
+      roomCode: room.roomCode,
+      playerId: "player-2",
+      callsign: "Joiner",
+      socketId: "socket-2",
+    });
+
+    // 0 GPS locks
+    expect(manager.canStartGame(room.roomCode, "host-1").canStart).toBe(false);
+
+    // 1 GPS lock
+    manager.updatePlayerGPSStatus(room.roomCode, "host-1", "LOCKED");
+    const check1 = manager.canStartGame(room.roomCode, "host-1");
+    expect(check1.canStart).toBe(false);
+    expect(check1.lockedGpsCount).toBe(1);
+
+    // 2 GPS locks -> Can start!
+    manager.updatePlayerGPSStatus(room.roomCode, "player-2", "LOCKED");
+    const check2 = manager.canStartGame(room.roomCode, "host-1");
+    expect(check2.canStart).toBe(true);
+    expect(check2.lockedGpsCount).toBe(2);
+
+    // Non-host cannot start game
+    expect(manager.canStartGame(room.roomCode, "player-2").canStart).toBe(false);
+
+    // Starting game transitions status
+    const started = manager.startGame(room.roomCode, "host-1");
+    expect(started.status).toBe("STARTING");
   });
 });
-

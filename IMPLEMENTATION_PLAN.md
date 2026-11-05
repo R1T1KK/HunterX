@@ -24,7 +24,7 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 
 | Phase | Days | Focus Area | Status | Deliverables |
 | :---: | :---: | :--- | :---: | :--- |
-| **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `IN_PROGRESS` | Day 1 & Day 2 Complete: PWA Shell, Home Screen, RoomManager, Socket.IO Gateway, Waiting Room |
+| **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `COMPLETED` | Days 1–3 Complete: PWA Shell, Home Screen, RoomManager, Socket.IO Gateway, Game Lobby Screen, Presets, Custom Drawer, Role Selection, GPS Lock Gate |
 | **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `PENDING` | 100dvh map, GPS ring, EMA filter, marker lerp |
 | **Phase 3** | 8–11 | State Engine, Spatial Math & Geofence | `PENDING` | 1Hz loop, Quick/Standard/Big Park presets, zone shrink |
 | **Phase 4** | 12–15 | 10m Alarm, 15s Cloak & Thumb Tag System | `PENDING` | Crimson alarm, 180s cooldown, server catch check |
@@ -71,16 +71,17 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 #### Day 3: Screen 2 (Game Lobby Screen) & House Rules Presets
 - **Objective:** Create the tactile mobile Game Lobby with house rule presets and role toggles.
 - **Tasks:**
-  - [ ] Build **Game Lobby Screen**:
-    - Room code card with 1-tap "Copy Link" and "Regenerate Code".
-    - House Rules Presets selector: **Quick** (5m round, 15s head start, 30s pings), **Standard** (10m round, 30s head start, 60s pings), **Big Park** (20m round, 60s head start, 90s pings, zone shrinking).
-    - Custom rules drawer: round length, head start, pings, play zone toggle, zone size, hunters talk toggle.
-    - Role selector: Hunter / Runner / Random toggle (1, 2, or 3 Hunters).
-    - Player roster list showing ready status and GPS lock indicator.
-    - Fixed bottom thumb-zone "START GAME" button.
+  - [x] Build **Game Lobby Screen**:
+    - [x] Room code card with 1-tap "Copy Link" and "Regenerate Code" (Web Share API + clipboard fallback).
+    - [x] House Rules Presets selector: **Quick** (5m round, 15s head start, 30s pings), **Standard** (10m round, 30s head start, 60s pings), **Big Park** (20m round, 60s head start, 90s pings, zone shrinking).
+    - [x] Custom rules drawer: round length, head start, pings, play zone toggle, zone size, hunters talk toggle with $\ge 44\text{px}$ touch steppers.
+    - [x] Role selector: Hunter / Runner / Random toggle (1, 2, or 3 Hunters) with SCRAM dark tactical styling.
+    - [x] Player roster list showing ready status and 4 GPS lock indicators (`LOCKED`, `ACQUIRING`, `UNAVAILABLE`, `DENIED`).
+    - [x] Fixed bottom thumb-zone "START GAME" button ($\ge 56\text{px}$ touch target with safe-area spacing).
 - **Mandatory Acceptance Criteria:**
-  - Host changing presets or toggling roles updates all connected mobile clients in real-time.
-  - "START GAME" button remains disabled until at least 2 players have confirmed GPS locks.
+  - [x] Host changing presets or toggling roles updates all connected mobile clients in real-time.
+  - [x] "START GAME" button remains strictly disabled on both client and server until at least 2 players have confirmed GPS locks (`accuracy <= 35m`).
+  - [x] 49/49 Day 3 audit and benchmark tests pass, 13/13 backend tests pass, production client build passes with 0 warnings.
 
 ---
 

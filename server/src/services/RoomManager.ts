@@ -1,6 +1,14 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import { Room, Player, RoomOperationResult } from "../types/index.js";
+import {
+  Room,
+  Player,
+  RoomOperationResult,
+  HouseRules,
+  RoleSettings,
+  RulesPreset,
+  GPSStatus,
+} from "../types/index.js";
 
 // Input validation schemas
 export const callsignSchema = z
@@ -29,6 +37,31 @@ export const joinRoomInputSchema = z.object({
   socketId: z.string().min(1, "Socket ID is required"),
 });
 
+export const updateRulesSchema = z.object({
+  roomCode: roomCodeSchema,
+  requesterPlayerId: z.string().min(1),
+  rules: z.object({
+    preset: z.enum(["QUICK", "STANDARD", "BIG_PARK", "CUSTOM"]),
+    roundLengthMinutes: z.number().min(1).max(60).optional(),
+    headStartSeconds: z.number().min(5).max(300).optional(),
+    pingIntervalSeconds: z.number().min(10).max(300).optional(),
+    playZoneEnabled: z.boolean().optional(),
+    zoneSizeMeters: z.number().min(100).max(5000).optional(),
+    zoneShrinks: z.boolean().optional(),
+    zoneShrinkIntervalMinutes: z.number().min(1).max(30).optional(),
+    huntersCanTalk: z.boolean().optional(),
+  }),
+});
+
+export const updateRoleSettingsSchema = z.object({
+  roomCode: roomCodeSchema,
+  requesterPlayerId: z.string().min(1),
+  roleSettings: z.object({
+    hunterCount: z.number().int().min(1).max(3),
+    mode: z.enum(["HUNTER", "RUNNER", "RANDOM"]),
+  }),
+});
+
 export class RoomError extends Error {
   constructor(public code: string, message: string) {
     super(message);
@@ -39,11 +72,45 @@ export class RoomError extends Error {
 // Unambiguous character set for high-contrast mobile readability
 const ROOM_CODE_CHARSET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
+export const HOUSE_RULES_PRESETS: Record<
+  Exclude<RulesPreset, "CUSTOM">,
+  Omit<HouseRules, "preset">
+> = {
+  QUICK: {
+    roundLengthMinutes: 5,
+    headStartSeconds: 15,
+    pingIntervalSeconds: 30,
+    playZoneEnabled: true,
+    zoneSizeMeters: 250,
+    zoneShrinks: false,
+    zoneShrinkIntervalMinutes: 5,
+    huntersCanTalk: true,
+  },
+  STANDARD: {
+    roundLengthMinutes: 10,
+    headStartSeconds: 30,
+    pingIntervalSeconds: 60,
+    playZoneEnabled: true,
+    zoneSizeMeters: 500,
+    zoneShrinks: false,
+    zoneShrinkIntervalMinutes: 5,
+    huntersCanTalk: true,
+  },
+  BIG_PARK: {
+    roundLengthMinutes: 20,
+    headStartSeconds: 60,
+    pingIntervalSeconds: 90,
+    playZoneEnabled: true,
+    zoneSizeMeters: 1000,
+    zoneShrinks: true,
+    zoneShrinkIntervalMinutes: 5,
+    huntersCanTalk: true,
+  },
+};
+
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();
-  // Reverse lookup: socketId -> roomCode
   private socketToRoom: Map<string, string> = new Map();
-  // Reverse lookup: playerId -> roomCode
   private playerToRoom: Map<string, string> = new Map();
 
   /**
@@ -73,7 +140,6 @@ export class RoomManager {
   public createRoom(input: z.infer<typeof createRoomInputSchema>): Room {
     const validated = createRoomInputSchema.parse(input);
 
-    // If player already in a room, remove them first
     if (this.playerToRoom.has(validated.hostPlayerId)) {
       const existingCode = this.playerToRoom.get(validated.hostPlayerId)!;
       this.leaveRoom(existingCode, validated.hostPlayerId);
@@ -88,6 +154,8 @@ export class RoomManager {
       callsign: validated.callsign,
       joinedAt: now,
       isHost: true,
+      isReady: false,
+      gpsStatus: "ACQUIRING",
     };
 
     const room: Room = {
@@ -98,6 +166,14 @@ export class RoomManager {
       status: "WAITING",
       maxPlayers: 15,
       players: [hostPlayer],
+      rules: {
+        preset: "STANDARD",
+        ...HOUSE_RULES_PRESETS.STANDARD,
+      },
+      roleSettings: {
+        hunterCount: 1,
+        mode: "RANDOM",
+      },
     };
 
     this.rooms.set(roomCode, room);
@@ -125,10 +201,8 @@ export class RoomManager {
       throw new RoomError("GAME_IN_PROGRESS", "This room has already started or completed.");
     }
 
-    // Check if player is already in this room (reconnection / tab reload)
     const existingPlayerIndex = room.players.findIndex((p) => p.playerId === validated.playerId);
     if (existingPlayerIndex !== -1) {
-      // Update socket ID and callsign
       const oldSocketId = room.players[existingPlayerIndex].socketId;
       this.socketToRoom.delete(oldSocketId);
 
@@ -140,7 +214,6 @@ export class RoomManager {
       return room;
     }
 
-    // Capacity validation
     if (room.players.length >= room.maxPlayers) {
       throw new RoomError("ROOM_FULL", `Room has reached maximum capacity of ${room.maxPlayers} players.`);
     }
@@ -151,6 +224,8 @@ export class RoomManager {
       callsign: validated.callsign,
       joinedAt: new Date().toISOString(),
       isHost: false,
+      isReady: false,
+      gpsStatus: "ACQUIRING",
     };
 
     room.players.push(newPlayer);
@@ -159,6 +234,237 @@ export class RoomManager {
     this.socketToRoom.set(validated.socketId, validated.roomCode);
     this.playerToRoom.set(validated.playerId, validated.roomCode);
 
+    return room;
+  }
+
+  /**
+   * Host regenerates the 6-character room code.
+   * All existing players remain in the room; old code is invalidated.
+   */
+  public regenerateRoomCode(oldCode: string, requesterPlayerId: string): { oldCode: string; newCode: string; room: Room } {
+    const formattedOld = oldCode.toUpperCase().trim();
+    const room = this.rooms.get(formattedOld);
+
+    if (!room) {
+      throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+    }
+
+    if (room.hostPlayerId !== requesterPlayerId) {
+      throw new RoomError("NOT_HOST", "Only the host can regenerate the room code.");
+    }
+
+    if (room.status !== "WAITING") {
+      throw new RoomError("INVALID_STATE", "Cannot regenerate room code after game has started.");
+    }
+
+    const newCode = this.generateRoomCode();
+
+    // Remove old code from rooms map, set new code
+    this.rooms.delete(formattedOld);
+    room.roomCode = newCode;
+    room.updatedAt = new Date().toISOString();
+    this.rooms.set(newCode, room);
+
+    // Update reverse lookups for all players in this room
+    for (const player of room.players) {
+      this.playerToRoom.set(player.playerId, newCode);
+      this.socketToRoom.set(player.socketId, newCode);
+    }
+
+    return { oldCode: formattedOld, newCode, room };
+  }
+
+  /**
+   * Updates House Rules. If preset is selected, applies preset defaults.
+   * If individual rules are changed, sets preset to CUSTOM.
+   */
+  public updateHouseRules(
+    roomCode: string,
+    requesterPlayerId: string,
+    rulesUpdate: {
+      preset: RulesPreset;
+      roundLengthMinutes?: number;
+      headStartSeconds?: number;
+      pingIntervalSeconds?: number;
+      playZoneEnabled?: boolean;
+      zoneSizeMeters?: number;
+      zoneShrinks?: boolean;
+      zoneShrinkIntervalMinutes?: number;
+      huntersCanTalk?: boolean;
+    }
+  ): Room {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+
+    if (!room) {
+      throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+    }
+
+    if (room.hostPlayerId !== requesterPlayerId) {
+      throw new RoomError("NOT_HOST", "Only the host can modify house rules.");
+    }
+
+    if (room.status !== "WAITING") {
+      throw new RoomError("INVALID_STATE", "Cannot modify rules while game is starting or in progress.");
+    }
+
+    if (rulesUpdate.preset !== "CUSTOM") {
+      // Apply exact preset defaults
+      const presetDefaults = HOUSE_RULES_PRESETS[rulesUpdate.preset];
+      room.rules = {
+        preset: rulesUpdate.preset,
+        ...presetDefaults,
+      };
+    } else {
+      // Custom overrides
+      room.rules = {
+        ...room.rules,
+        preset: "CUSTOM",
+        ...(rulesUpdate.roundLengthMinutes !== undefined && { roundLengthMinutes: rulesUpdate.roundLengthMinutes }),
+        ...(rulesUpdate.headStartSeconds !== undefined && { headStartSeconds: rulesUpdate.headStartSeconds }),
+        ...(rulesUpdate.pingIntervalSeconds !== undefined && { pingIntervalSeconds: rulesUpdate.pingIntervalSeconds }),
+        ...(rulesUpdate.playZoneEnabled !== undefined && { playZoneEnabled: rulesUpdate.playZoneEnabled }),
+        ...(rulesUpdate.zoneSizeMeters !== undefined && { zoneSizeMeters: rulesUpdate.zoneSizeMeters }),
+        ...(rulesUpdate.zoneShrinks !== undefined && { zoneShrinks: rulesUpdate.zoneShrinks }),
+        ...(rulesUpdate.zoneShrinkIntervalMinutes !== undefined && { zoneShrinkIntervalMinutes: rulesUpdate.zoneShrinkIntervalMinutes }),
+        ...(rulesUpdate.huntersCanTalk !== undefined && { huntersCanTalk: rulesUpdate.huntersCanTalk }),
+      };
+    }
+
+    room.updatedAt = new Date().toISOString();
+    return room;
+  }
+
+  /**
+   * Updates Hunter headcount and role mode.
+   */
+  public updateRoleSettings(
+    roomCode: string,
+    requesterPlayerId: string,
+    roleSettings: RoleSettings
+  ): Room {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+
+    if (!room) {
+      throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+    }
+
+    if (room.hostPlayerId !== requesterPlayerId) {
+      throw new RoomError("NOT_HOST", "Only the host can configure role settings.");
+    }
+
+    if (room.status !== "WAITING") {
+      throw new RoomError("INVALID_STATE", "Cannot configure roles while match is starting or active.");
+    }
+
+    if (roleSettings.hunterCount < 1 || roleSettings.hunterCount > 3) {
+      throw new RoomError("INVALID_HUNTER_COUNT", "Hunter count must be 1, 2, or 3.");
+    }
+
+    room.roleSettings = {
+      hunterCount: roleSettings.hunterCount,
+      mode: roleSettings.mode,
+    };
+
+    room.updatedAt = new Date().toISOString();
+    return room;
+  }
+
+  /**
+   * Updates player ready/not-ready status.
+   */
+  public updatePlayerReady(roomCode: string, playerId: string, isReady: boolean): Room {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+
+    if (!room) {
+      throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+    }
+
+    const player = room.players.find((p) => p.playerId === playerId);
+    if (!player) {
+      throw new RoomError("PLAYER_NOT_IN_ROOM", "Player is not in this room.");
+    }
+
+    player.isReady = isReady;
+    room.updatedAt = new Date().toISOString();
+    return room;
+  }
+
+  /**
+   * Updates player GPS lock status.
+   */
+  public updatePlayerGPSStatus(roomCode: string, playerId: string, gpsStatus: GPSStatus): Room {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+
+    if (!room) {
+      throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+    }
+
+    const player = room.players.find((p) => p.playerId === playerId);
+    if (!player) {
+      throw new RoomError("PLAYER_NOT_IN_ROOM", "Player is not in this room.");
+    }
+
+    player.gpsStatus = gpsStatus;
+    room.updatedAt = new Date().toISOString();
+    return room;
+  }
+
+  /**
+   * Evaluates if the match can be started.
+   * MANDATORY ACCEPTANCE RULE: Must have at least 2 players with confirmed GPS locks ("LOCKED").
+   */
+  public canStartGame(roomCode: string, requesterPlayerId: string): { canStart: boolean; reason?: string; lockedGpsCount: number } {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+
+    if (!room) {
+      return { canStart: false, reason: "Room not found.", lockedGpsCount: 0 };
+    }
+
+    if (room.hostPlayerId !== requesterPlayerId) {
+      return { canStart: false, reason: "Only the room host can start the game.", lockedGpsCount: 0 };
+    }
+
+    if (room.status !== "WAITING") {
+      return { canStart: false, reason: "Game is already starting or in progress.", lockedGpsCount: 0 };
+    }
+
+    if (room.players.length < 2) {
+      return { canStart: false, reason: "At least 2 players are required to start a match.", lockedGpsCount: 0 };
+    }
+
+    const lockedGpsCount = room.players.filter((p) => p.gpsStatus === "LOCKED").length;
+
+    // MANDATORY ACCEPTANCE RULE: Minimum 2 confirmed GPS locks
+    if (lockedGpsCount < 2) {
+      return {
+        canStart: false,
+        reason: `GPS lock required for at least 2 players. Currently locked: ${lockedGpsCount}/2.`,
+        lockedGpsCount,
+      };
+    }
+
+    return { canStart: true, lockedGpsCount };
+  }
+
+  /**
+   * Transitions room to STARTING if all start criteria are met.
+   */
+  public startGame(roomCode: string, requesterPlayerId: string): Room {
+    const check = this.canStartGame(roomCode, requesterPlayerId);
+    if (!check.canStart) {
+      throw new RoomError("CANNOT_START_GAME", check.reason || "Start conditions not met.");
+    }
+
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted)!;
+
+    room.status = "STARTING";
+    room.updatedAt = new Date().toISOString();
     return room;
   }
 
@@ -186,12 +492,10 @@ export class RoomManager {
     let newHostId: string | undefined;
 
     if (room.players.length === 0) {
-      // Room is empty, clean it up
       this.rooms.delete(formattedCode);
       return { room: null, player: removedPlayer, wasHost, isEmpty: true };
     }
 
-    // If host left, promote the next oldest connected player
     if (wasHost) {
       room.players[0].isHost = true;
       room.hostPlayerId = room.players[0].playerId;
@@ -260,4 +564,3 @@ export class RoomManager {
 
 // Global Singleton Instance
 export const roomManager = new RoomManager();
-

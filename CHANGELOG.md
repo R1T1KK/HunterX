@@ -9,10 +9,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Milestone 1 Day 3
-- Screen 2: Game Lobby with full House Rules presets (Quick, Standard, Big Park).
-- Stepper controls for round length, head start, ping frequency, and dynamic zone shrinking.
-- Role selector toggle (Hunter / Runner / Random) and ready status system.
+### Planned for Phase 2 (Days 4–7)
+- Day 4: Full-bleed Mapbox GL JS mobile canvas ($100\text{dvh}$) with dark tactical vector styling.
+- Day 5: HTML5 Geolocation API continuous watch and GPS accuracy ring visualization.
+- Day 6: Exponential Moving Average (EMA) mathematical filtering and 1Hz location streaming.
+- Day 7: Multi-player marker rendering and linear interpolation (lerp) gliding.
+
+---
+
+## [0.3.0-day3] - 2026-11-06
+
+### Added
+- **Tactical Game Lobby Screen (`client/src/components/lobby/GameLobbyScreen.tsx`):**
+  - Mobile-first, portrait-optimized game staging area with full safe-area insets (`safe-top`, `safe-bottom`, `safe-px`).
+  - Seamless integration with URL query parameters (`?code=XXXXXX`) for instantaneous one-tap invites.
+  - Thumb-zone anchored "START GAME" button with pulsating visual feedback when launch criteria are fulfilled.
+  - Mandatory server-authoritative GPS Lock Gate: "START GAME" button strictly disabled until at least 2 players have confirmed GPS locks (`accuracy <= 35m`).
+- **Room Code Card (`client/src/components/lobby/RoomCodeCard.tsx`):**
+  - Large alphanumeric 6-character room code display with high-contrast font.
+  - Native Web Share API integration with automatic fallback to clipboard copy.
+  - Host-only cryptographically secure code regeneration with seamless Socket.IO channel re-registration without disconnecting connected players.
+- **House Rules Presets Selector (`client/src/components/lobby/HouseRulesPresets.tsx`):**
+  - **Quick:** 5-minute round, 15-second head start, 30-second radar pings, 250m static zone.
+  - **Standard:** 10-minute round, 30-second head start, 60-second radar pings, 500m static zone.
+  - **Big Park:** 20-minute round, 60-second head start, 90-second radar pings, 1000m dynamic shrinking zone.
+  - Instant reactive synchronization to all connected players on change.
+- **Custom Rules Drawer (`client/src/components/lobby/CustomRulesDrawer.tsx`):**
+  - Full-featured mobile modal drawer with tactile $\ge 44\text{px}$ touch steppers for round length, head start, radar sweep interval, play zone radius, zone shrinking, and Hunters radio talk toggles.
+- **Role Selection System (`client/src/components/lobby/RoleSelector.tsx`):**
+  - 3-segment SCRAM-style segmented control: `Hunter`, `Runner`, `Random`.
+  - Tactical hunter headcount selector (1, 2, or 3 Hunters).
+- **Player Roster with Live GPS Tracking (`client/src/components/lobby/PlayerRoster.tsx`):**
+  - Real-time roster display showing initials avatars, callsigns, host indicators, and ready status.
+  - Live 4-state GPS indicators: `LOCKED` (Emerald), `ACQUIRING` (Amber pulse), `UNAVAILABLE` (Rose), `DENIED` (Red alert).
+- **HTML5 Geolocation Stream Hook (`client/src/hooks/useGeolocation.ts`):**
+  - High-accuracy continuous location watcher with automatic GPS state updates piped to the backend Socket.IO gateway.
+- **Backend RoomManager & Socket.IO Gateway Enhancements (`server/src/services/RoomManager.ts`, `server/src/socket/roomGateway.ts`):**
+  - In-memory preset application and custom rules override validation.
+  - Role settings management and host authorization enforcement.
+  - Host-only code regeneration preserving socket connections using `socketsJoin` and `socketsLeave`.
+  - Authoritative `canStartGame` validator enforcing Host caller, `WAITING` status, $\ge 2$ players, and $\ge 2$ confirmed GPS locks.
+  - New Socket.IO events: `room:update-rules`, `room:settings-updated`, `room:update-role-settings`, `room:role-settings-updated`, `room:update-gps-status`, `room:gps-status-updated`, `room:update-ready`, `room:player-ready-updated`, `room:regenerate-code`, `room:code-regenerated`, `room:start-game`, `room:game-started`.
+- **Automated Verification & Benchmarks (`scripts/verify-day3.ts`):**
+  - 49-point comprehensive audit and end-to-end multi-device benchmark test suite.
+  - 100% pass rate across room code regeneration, preset rules, role settings, GPS lock gate enforcement, Socket.IO 2-device real-time sync, and mobile ergonomics touch targets.
 
 ---
 
