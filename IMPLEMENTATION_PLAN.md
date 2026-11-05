@@ -1,0 +1,267 @@
+# IMPLEMENTATION_PLAN.md — 20-Day Mobile Gaming Development Roadmap
+
+> **Project:** HIDERUSH (Mobile-First Real-Time Location Game)  
+> **Velocity Target:** 4–5 hours/day over 20 days (80–100 engineering hours)  
+> **Testing Mandate:** Physical Mobile Device Testing is a MANDATORY acceptance criterion for all milestones.  
+> **Status:** PENDING COMMENCEMENT  
+
+---
+
+## 📊 Roadmap Overview & Phase Breakdown
+
+```
+Phase 1 (Days 1–3)   : Mobile Game Shell, PWA Scaffolding, Room Gateway & Lobby
+Phase 2 (Days 4–7)   : Full-Bleed Mapbox Canvas, Mobile Geolocation & Smoothing
+Phase 3 (Days 8–11)  : Game Engine, Presets (Quick/Standard/Big Park) & Shrinking Zone
+Phase 4 (Days 12–15) : Core Tactical Mechanics: Alarm, Invisibility & Thumb-Zone Tag
+Phase 5 (Days 16–18) : Mobile Hardware Hardening (WakeLock, Audio/Vibe, Reconnect)
+Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
+```
+
+---
+
+## 🚦 Progress Dashboard
+
+| Phase | Days | Focus Area | Status | Deliverables |
+| :---: | :---: | :--- | :---: | :--- |
+| **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `PENDING` | Dark gaming UI, room code generator, presets |
+| **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `PENDING` | 100dvh map, GPS ring, EMA filter, marker lerp |
+| **Phase 3** | 8–11 | State Engine, Spatial Math & Geofence | `PENDING` | 1Hz loop, Quick/Standard/Big Park presets, zone shrink |
+| **Phase 4** | 12–15 | 10m Alarm, 15s Cloak & Thumb Tag System | `PENDING` | Crimson alarm, 180s cooldown, server catch check |
+| **Phase 5** | 16–18 | Hardware Web APIs & 4G Network Recovery | `PENDING` | WakeLock, Web Audio siren, vibration, airplane mode test |
+| **Phase 6** | 19–20 | Outdoor Park Field Test & Cloud Release | `PENDING` | 3-phone outdoor test, Vercel/Render SSL, v1.0.0 |
+
+---
+
+## 📅 Detailed Daily Objectives & Task Breakdown
+
+### Phase 1: Mobile Game Shell, Rooms & Tactical Lobby (Days 1–3)
+
+#### Day 1: Mobile PWA Scaffolding & Dark Gaming Design System
+- **Objective:** Scaffold Next.js client and Node.js backend with full-bleed mobile viewport and SCRAM-inspired dark gaming design system.
+- **Tasks:**
+  - [ ] Initialize `client/` with Next.js 14+ App Router, TypeScript, and Tailwind CSS.
+  - [ ] Configure `manifest.json` with `display: standalone`, `orientation: portrait`, and theme color `#07090E`.
+  - [ ] Set up safe-area utilities in Tailwind (`safe-top`, `safe-bottom`, `safe-left`, `safe-right`).
+  - [ ] Configure dark gaming palette: Pure Black (`#07090E`), Charcoal (`#121620`), Crimson Accent (`#FF3B30`/`#FF4655`), Amber (`#FF9500`).
+  - [ ] Initialize `server/` with Express, Socket.IO, TypeScript, and Zod environment validation.
+- **Mandatory Acceptance Criteria:**
+  - Client loads on real iPhone Safari and Android Chrome with zero horizontal scroll and proper safe-area padding.
+  - Full-screen standalone PWA installation banner works on mobile browsers.
+
+#### Day 2: Screen 1 (Home Screen) & Room Gateway
+- **Objective:** Build the Mobile Home Screen and backend room connection gateway.
+- **Tasks:**
+  - [ ] Build **Home Screen**:
+    - Large bold HIDERUSH hero typography.
+    - Player Profile badge (avatar preview + callsign input).
+    - Large glowing "Host a Game" button ($\ge 56\text{px}$ touch target).
+    - "Join with a Code" card with formatted 6-char input.
+    - Persistent Mobile Bottom Navigation Bar (Play, Stats, Rules, Profile).
+  - [ ] Build backend `RoomManager` (generate 6-char room code, max 15 capacity, room state store).
+- **Mandatory Acceptance Criteria:**
+  - Tapping "Host a Game" on mobile generates a room in $< 200\text{ms}$.
+  - Joining with code connects a second mobile device and updates both screens.
+
+#### Day 3: Screen 2 (Game Lobby Screen) & House Rules Presets
+- **Objective:** Create the tactile mobile Game Lobby with house rule presets and role toggles.
+- **Tasks:**
+  - [ ] Build **Game Lobby Screen**:
+    - Room code card with 1-tap "Copy Link" and "Regenerate Code".
+    - House Rules Presets selector: **Quick** (5m round, 15s head start, 30s pings), **Standard** (10m round, 30s head start, 60s pings), **Big Park** (20m round, 60s head start, 90s pings, zone shrinking).
+    - Custom rules drawer: round length, head start, pings, play zone toggle, zone size, hunters talk toggle.
+    - Role selector: Hunter / Runner / Random toggle (1, 2, or 3 Hunters).
+    - Player roster list showing ready status and GPS lock indicator.
+    - Fixed bottom thumb-zone "START GAME" button.
+- **Mandatory Acceptance Criteria:**
+  - Host changing presets or toggling roles updates all connected mobile clients in real-time.
+  - "START GAME" button remains disabled until at least 2 players have confirmed GPS locks.
+
+---
+
+### Phase 2: Full-Bleed Mapbox Viewport & Geolocation Engine (Days 4–7)
+
+#### Day 4: Full-Bleed Mapbox Mobile Canvas
+- **Objective:** Render an ultra-responsive Mapbox GL JS map occupying 100% of the mobile viewport.
+- **Tasks:**
+  - [ ] Mount Mapbox canvas filling `100vw \times 100dvh` with custom high-contrast dark vector style.
+  - [ ] Disable non-gaming gestures (disable double-tap zoom, maintain single-finger pan and pinch-zoom).
+  - [ ] Create floating map controls: "Recenter on Me", compass heading, zoom controls.
+- **Mandatory Acceptance Criteria:**
+  - Map pans and zooms at 60 FPS on physical iPhone and Android devices without lagging.
+
+#### Day 5: Mobile Geolocation Intake & Accuracy Ring
+- **Objective:** Ingest real-time GPS coordinates via HTML5 Geolocation API with accuracy visualization.
+- **Tasks:**
+  - [ ] Implement `useGeolocation` hook with `enableHighAccuracy: true` and fallback recovery.
+  - [ ] Render dynamic GPS Accuracy Circle (`coords.accuracy`) around user location marker.
+  - [ ] Implement tactical GPS Signal Quality Badge (Green: $< 10\text{m}$, Amber: $10–20\text{m}$, Red: $> 20\text{m}$).
+- **Mandatory Acceptance Criteria:**
+  - Walking outdoors with a phone visibly moves the user marker and tightens the accuracy circle.
+
+#### Day 6: Coordinate Smoothing (EMA) & 1Hz Network Streaming
+- **Objective:** Eliminate GPS jitter and stream clean coordinates over Socket.IO without cellular bloat.
+- **Tasks:**
+  - [ ] Apply Exponential Moving Average (EMA) mathematical filter to smooth GPS jitter.
+  - [ ] Build throttled location dispatch emitting `location:update` at maximum 1 Hz.
+  - [ ] Reject coordinate jumps $> 25\text{m}$ accuracy to avoid false movement.
+- **Mandatory Acceptance Criteria:**
+  - Standing still outdoors does not cause the map marker to drift wildly; socket payload $\le 1.5\text{KB}$.
+
+#### Day 7: Multi-Player Marker Rendering & Linear Interpolation (Lerp)
+- **Objective:** Render other players' markers smoothly on the mobile map canvas.
+- **Tasks:**
+  - [ ] Implement GeoJSON symbol layers for Hunters (Red icon) and Runners (Cyan/Blue icon).
+  - [ ] Implement client-side linear interpolation (lerp) between incoming 1-second server ticks.
+  - [ ] Add compass rotation to markers based on device orientation API where available.
+- **Mandatory Acceptance Criteria:**
+  - Another player walking outdoors appears to glide smoothly across the screen rather than stuttering every second.
+
+---
+
+### Phase 3: Game Engine, Presets & Shrinking Geofence (Days 8–11)
+
+#### Day 8: Authoritative Game Loop & Head-Start Scatter Countdown
+- **Objective:** Build backend match lifecycle with head-start scatter countdown.
+- **Tasks:**
+  - [ ] Implement state machine: `LOBBY` $\rightarrow$ `COUNTDOWN` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `COMPLETED`.
+  - [ ] Implement 30s Head-Start Scatter Phase:
+    - Runners see pulsing green *"SCATTER!"* countdown.
+    - Hunters see locked map overlay: *"HEAD START IN PROGRESS (30s)"*.
+  - [ ] Broadcast synchronized game clock every second.
+- **Mandatory Acceptance Criteria:**
+  - When timer reaches 00:00, Hunter map unlocks instantly and the main match begins on all mobile devices.
+
+#### Day 9: Role Assignment Engine & Preset Handler
+- **Objective:** Server-authoritative role distribution and house rules enforcement.
+- **Tasks:**
+  - [ ] Validate Hunter allocation (1, 2, or 3) and execute cryptographic random or manual assignment.
+  - [ ] Enforce preset parameters (round length, ping intervals, zone settings).
+  - [ ] Dispatch role-specific payloads (`role:assigned`).
+- **Mandatory Acceptance Criteria:**
+  - Clients receive verified roles; no client can tamper with its assigned team.
+
+#### Day 10: Spatial Distance Engine & 1Hz Haversine Matrix
+- **Objective:** Compute pairwise spherical distances between all active players on the backend.
+- **Tasks:**
+  - [ ] Implement vectorized Haversine distance matrix in `server/src/services/GeoService.ts`.
+  - [ ] Calculate distances between all Hunters and Runners every 1 second in RAM.
+  - [ ] Benchmark computation time for 15 concurrent players ($< 1\text{ms}$).
+- **Mandatory Acceptance Criteria:**
+  - Unit tests verify distance precision down to centimeters against known coordinates.
+
+#### Day 11: Play Zone (Geofence) & Dynamic Shrinking Engine
+- **Objective:** Render interactive play boundary and shrinking zone mechanics.
+- **Tasks:**
+  - [ ] Lock zone center coordinates to room creation point.
+  - [ ] Render dynamic circular geofence polygon on Mapbox client with red out-of-bounds wash.
+  - [ ] If zone shrinking is enabled (Big Park preset), interpolate zone radius over match duration.
+  - [ ] Emit `game:out_of_bounds_warning` if a player ventures outside the boundary.
+- **Mandatory Acceptance Criteria:**
+  - Mobile map displays boundary ring; moving outside triggers warning banner.
+
+---
+
+### Phase 4: Core Tactical Mechanics & Elimination (Days 12–15)
+
+#### Day 12: Hunter 10m Proximity Alarm Engine
+- **Objective:** Implement 10-meter proximity detection with zero-knowledge packet filtering.
+- **Tasks:**
+  - [ ] Check pairwise Hunter $\leftrightarrow$ Runner distance on every tick.
+  - [ ] When distance $\le 10.0\text{m}$, emit private `game:proximity_alarm` exclusively to Hunter socket.
+  - [ ] Implement $4\text{m}$ hysteresis buffer: Alarm re-arms only when distance exceeds $\ge 14.0\text{m}$.
+  - [ ] Verify Runner socket receives zero notification.
+- **Mandatory Acceptance Criteria:**
+  - Hunter receives proximity alert; Runner's network inspector shows zero incoming events.
+
+#### Day 13: Tactical Alarm Audio Siren & Vibration Pulse
+- **Objective:** Deliver sensory alarm feedback on mobile hardware.
+- **Tasks:**
+  - [ ] Pre-unlock `AudioContext` on Home screen tap.
+  - [ ] Generate 10-second synthetic siren pulse on proximity alert.
+  - [ ] Fire tactical vibration pattern (`navigator.vibrate([300, 200, 300, 200])`) on supported devices.
+  - [ ] Display pulsing crimson emergency HUD border on Hunter device.
+- **Mandatory Acceptance Criteria:**
+  - Hunter phone audibly alarms and vibrates for 10 seconds while approaching a Runner outdoors.
+
+#### Day 14: Runner Invisibility Cloak & Packet Stripping
+- **Objective:** Implement server-authoritative Invisibility ability with 3-minute cooldown.
+- **Tasks:**
+  - [ ] Add floating thumb-level "INVISIBILITY CLOAK" action button to Runner HUD.
+  - [ ] Validate activation request on server: verify 180s cooldown has elapsed.
+  - [ ] For 15 seconds, strip Runner's coordinates from Hunter broadcast packets and suppress proximity alarm.
+  - [ ] Display 15s radial active pulse and 3-minute circular cooldown on Runner's screen.
+  - [ ] Ensure Hunters receive zero notification of activation.
+- **Mandatory Acceptance Criteria:**
+  - Runner vanishes from Hunter's map for 15s; cooldown remains enforced for 3 minutes.
+
+#### Day 15: Server Catch Validation, Thumb Tag Button & Win/Loss
+- **Objective:** Implement server-verified catch and cinematic match resolution.
+- **Tasks:**
+  - [ ] Add prominent "TAG RUNNER" button to Hunter HUD, highlighted when a Runner is within range.
+  - [ ] Hunter emits `catch:attempt`; server verifies distance $\le 5.0\text{m}$.
+  - [ ] On valid catch: Eliminate Runner $\rightarrow$ transition to Spectator $\rightarrow$ broadcast elimination.
+  - [ ] Evaluate win conditions:
+    - All Runners caught $\rightarrow$ Hunter Victory.
+    - Timer reaches 00:00 with active Runners $\rightarrow$ Runner Victory.
+  - [ ] Display **Screen 5 (Game Results)** with cinematic banner and match stats.
+- **Mandatory Acceptance Criteria:**
+  - Physical tag within 5m successfully eliminates Runner and triggers victory screen when all are caught.
+
+---
+
+### Phase 5: Mobile Hardware Hardening & Network Resilience (Days 16–18)
+
+#### Day 16: Screen Wake Lock & Backgrounding Protection
+- **Objective:** Prevent mobile browsers from sleeping during active matches.
+- **Tasks:**
+  - [ ] Acquire `navigator.wakeLock.request('screen')` on Game screen entry.
+  - [ ] Bind visibility change handler to re-acquire wake lock when phone unlocks or returns to foreground.
+  - [ ] Add visual Wake Lock active indicator on HUD.
+- **Mandatory Acceptance Criteria:**
+  - Phone screen remains fully awake for a complete 15-minute outdoor session without dimming.
+
+#### Day 17: Cellular Network Handoff & Session Reconnection
+- **Objective:** Survive 4G/5G cell tower transitions and brief packet dropouts outdoors.
+- **Tasks:**
+  - [ ] Implement socket heartbeat ping and automatic token re-authentication.
+  - [ ] Render non-blocking "Reconnecting..." status pill on HUD.
+  - [ ] Restore active game state, timer, and cooldowns upon reconnecting within 60 seconds.
+- **Mandatory Acceptance Criteria:**
+  - Toggling airplane mode for 5 seconds outdoors re-establishes game session without resetting progress.
+
+#### Day 18: Screen 4 (Player Profile) & Polish
+- **Objective:** Complete Player Profile screen and UI polish.
+- **Tasks:**
+  - [ ] Build **Player Profile Screen**: Callsign editor, win/loss stats, total tags, distance covered.
+  - [ ] Add sound effects for button taps and countdown beeps.
+  - [ ] Polish UI transitions with smooth hardware-accelerated animations.
+- **Mandatory Acceptance Criteria:**
+  - Player stats persist across sessions and display accurately on the profile screen.
+
+---
+
+### Phase 6: Multi-Device Outdoor Field Test & Cloud Release (Days 19–20)
+
+#### Day 19: Physical Multi-Device Outdoor Field Test
+- **Objective:** Conduct live end-to-end matches with 3+ real smartphones in a public park.
+- **Tasks:**
+  - [ ] Gather 3 physical smartphones (iPhone on Safari, Android on Chrome).
+  - [ ] Play a complete match under the **Standard Preset** (10m round, 30s head start).
+  - [ ] Test 10m proximity alarm accuracy in open space.
+  - [ ] Test Invisibility cloak vanish and re-appear.
+  - [ ] Test server tag button at physical distance $\approx 3–4\text{m}$.
+  - [ ] Measure battery consumption and device thermals over 3 consecutive matches.
+- **Mandatory Acceptance Criteria:**
+  - Full match completes outdoors without crashes, socket drops, or false catches.
+
+#### Day 20: Cloud Deployment (Vercel + Render) & Production Release
+- **Objective:** Deploy production application and execute final security audit.
+- **Tasks:**
+  - [ ] Deploy Next.js PWA to Vercel with custom domain and edge SSL.
+  - [ ] Deploy Socket.IO server to Render with persistent WebSocket support.
+  - [ ] Verify HTTPS/WSS requirements for Geolocation, Wake Lock, and AudioContext.
+  - [ ] Run Lighthouse Mobile Audit (Target: $> 90$ performance, 100% PWA compliance).
+  - [ ] Update `CHANGELOG.md` with version `1.0.0-mvp`.
+- **Mandatory Acceptance Criteria:**
+  - Public mobile web URL operates flawlessly with zero console errors.
