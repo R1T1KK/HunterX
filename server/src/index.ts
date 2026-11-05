@@ -10,8 +10,19 @@ export const app = express();
 export const server = http.createServer(app);
 
 // Configure CORS
-const corsOptions = {
-  origin: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
+const allowedOrigins = env.CORS_ORIGIN.split(",").map((o) => o.trim());
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // In development or when origin is undefined (mobile apps, curl), allow
+    if (!origin || env.NODE_ENV === "development") {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
 };
 
@@ -21,7 +32,7 @@ app.use(express.json());
 // Initialize Socket.IO
 export const io = new SocketIOServer(server, {
   cors: {
-    origin: corsOptions.origin,
+    origin: (_origin, callback) => callback(null, true),
     methods: ["GET", "POST"],
     credentials: true,
   },

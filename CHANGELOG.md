@@ -9,11 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Phase 2 (Days 4–7)
-- Day 4: Full-bleed Mapbox GL JS mobile canvas ($100\text{dvh}$) with dark tactical vector styling.
+### Planned for Phase 2 (Days 5–7)
 - Day 5: HTML5 Geolocation API continuous watch and GPS accuracy ring visualization.
 - Day 6: Exponential Moving Average (EMA) mathematical filtering and 1Hz location streaming.
 - Day 7: Multi-player marker rendering and linear interpolation (lerp) gliding.
+
+---
+
+## [0.4.0-day4] - 2026-11-06
+
+### Added
+- **Full-Bleed Mapbox GL JS Mobile Canvas (`client/src/components/map/FullBleedMap.tsx`):**
+  - Seamless full-bleed map viewport ($100\text{vw} \times 100\text{dvh}$) locked to `position: fixed; inset: 0`.
+  - Zero unwanted margins, horizontal scrolling suppression, and safe-area inset handling (`safe-top`, `safe-bottom`, `safe-px`).
+  - Mobile orientation change and dynamic address-bar resize listener (`map.resize()`) preventing layout distortion.
+  - Graceful token missing and offline fallback rendering a dark tactical radar grid.
+- **SCRAM-Inspired Dark Vector Styling (`client/src/components/map/mapConfig.ts`):**
+  - Color palette: Pure Black (`#07090E`), Charcoal (`#121620`), High-Voltage Crimson (`#FF3B30`), Amber (`#FF9500`), dark road geometries (`#252C3D`/`#38435C`), muted parks (`#13231B`), and deep blue-grey water (`#0C1726`).
+  - High-contrast street typography optimized for outdoor mobile gaming readability in direct sunlight.
+- **Mobile Touch Gesture Optimizations:**
+  - Single-finger fluid pan enabled (`dragPan: true`).
+  - Pinch-to-zoom and two-finger rotate enabled (`touchZoomRotate: true`).
+  - Double-tap zoom strictly disabled (`doubleClickZoom: false`) to eliminate accidental zoom bursts during fast physical movement.
+  - Scroll zoom and box zoom disabled to eliminate desktop conflict.
+- **Tactical Floating Map Controls (`client/src/components/map/FloatingMapControls.tsx`):**
+  - **Recenter on Me:** Thumb-zone crosshair button with GPS acquisition spinner and smooth `map.flyTo` animation.
+  - **Compass Heading:** Dynamically rotating compass needle updating on map rotation; 1-tap reset to North (`bearing: 0, pitch: 0`).
+  - **Tactical Zoom Controls:** Touch targets meeting $\ge 44\text{px} \times 44\text{px}$ standard with smooth animated zoom step increments.
+- **Gameplay Screen Assembly (`client/src/components/map/GameMapScreen.tsx`):**
+  - Dedicated full-screen gameplay canvas housing Layer 0 Mapbox canvas and Layer 1 floating tactical HUD.
+  - Exit match confirmation dialog preventing accidental match abandonment.
+  - Routing integration in `client/src/app/page.tsx` for active matches (`STARTING` or `IN_PROGRESS`) and 1-tap "Tactical Map Canvas" preview on Home Screen.
+- **Automated Verification & Benchmarks (`scripts/verify-day4.ts`):**
+  - 38-point audit verifying package dependencies, full-bleed CSS, gesture flags, SCRAM color tokens, touch targets, and responsive mobile viewport dimensions (360px–430px).
 
 ---
 

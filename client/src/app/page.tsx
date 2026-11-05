@@ -8,6 +8,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { Room, HouseRules, RoleSettings, SocketErrorPayload, GPSStatus } from "@/types";
 import { HomeScreen } from "@/components/home/HomeScreen";
 import { GameLobbyScreen } from "@/components/lobby/GameLobbyScreen";
+import { GameMapScreen } from "@/components/map/GameMapScreen";
 import { BottomNav, NavTab } from "@/components/navigation/BottomNav";
 import { StatsView } from "@/components/views/StatsView";
 import { RulesView } from "@/components/views/RulesView";
@@ -19,6 +20,7 @@ function MainGameApp() {
 
   const [activeTab, setActiveTab] = useState<NavTab>("play");
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
+  const [isPreviewingMap, setIsPreviewingMap] = useState(false);
   const [isHostLoading, setIsHostLoading] = useState(false);
   const [isJoinLoading, setIsJoinLoading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -26,7 +28,7 @@ function MainGameApp() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Active GPS tracking
-  const { status: localGpsStatus } = useGeolocation((newStatus: GPSStatus) => {
+  const { status: localGpsStatus, coords: localCoords } = useGeolocation((newStatus: GPSStatus) => {
     if (currentRoom && playerId) {
       const socket = getSocket();
       socket.emit("room:update-gps-status", {
@@ -270,8 +272,29 @@ function MainGameApp() {
     );
   }
 
-  // Active Room -> Game Lobby Screen
+  // Map Canvas Preview (Day 4 Exploration)
+  if (isPreviewingMap) {
+    return (
+      <GameMapScreen
+        onLeaveGame={() => setIsPreviewingMap(false)}
+        userCoordinates={localCoords ? [localCoords.lng, localCoords.lat] : null}
+      />
+    );
+  }
+
+  // Active Room -> Match Running (Screen 3: GameMapScreen) or Lobby (Screen 2: GameLobbyScreen)
   if (currentRoom) {
+    if (currentRoom.status === "STARTING" || currentRoom.status === "IN_PROGRESS") {
+      return (
+        <GameMapScreen
+          room={currentRoom}
+          currentPlayerId={playerId}
+          onLeaveGame={handleLeaveRoom}
+          userCoordinates={localCoords ? [localCoords.lng, localCoords.lat] : null}
+        />
+      );
+    }
+
     return (
       <GameLobbyScreen
         room={currentRoom}
@@ -303,6 +326,7 @@ function MainGameApp() {
           isJoinLoading={isJoinLoading}
           errorMessage={errorMessage}
           onClearError={() => setErrorMessage(null)}
+          onPreviewMap={() => setIsPreviewingMap(true)}
         />
       )}
 

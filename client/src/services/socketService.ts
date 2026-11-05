@@ -1,13 +1,26 @@
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_SERVER_URL =
-  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:4000";
+function getSocketServerUrl(): string {
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    // If on a tunnel (localtunnel, ngrok, cloudflare) or public URL, use same-origin proxy
+    if (hostname.includes("loca.lt") || hostname.includes("ngrok") || hostname.includes("trycloudflare.com")) {
+      return window.location.origin;
+    }
+    // If on local network IP (e.g. 192.168.0.107)
+    if (hostname && hostname !== "localhost" && hostname !== "127.0.0.1") {
+      return `http://${hostname}:4000`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:4000";
+}
 
 let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
-    socket = io(SOCKET_SERVER_URL, {
+    const serverUrl = getSocketServerUrl();
+    socket = io(serverUrl, {
       autoConnect: true,
       transports: ["websocket", "polling"],
       reconnectionAttempts: 5,

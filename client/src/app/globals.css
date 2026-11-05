@@ -1,3 +1,4 @@
+@import "mapbox-gl/dist/mapbox-gl.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -77,4 +78,27 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
   box-sizing: border-box;
+}
+
+/* Full-bleed Mapbox Mobile Canvas Overrides */
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden;
+  font-family: inherit;
+  background-color: var(--bg-black);
+}
+
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+}
+
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right {
+  margin-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  opacity: 0.5;
+  transform: scale(0.8);
+  transform-origin: bottom right;
 }

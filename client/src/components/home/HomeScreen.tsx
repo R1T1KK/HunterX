@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Radio, Edit3, ArrowRight, Loader2, AlertCircle, Compass, Users, Sparkles } from "lucide-react";
+import { Radio, Edit3, ArrowRight, Loader2, AlertCircle, Compass, Users, Sparkles, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -15,6 +15,7 @@ interface HomeScreenProps {
   isJoinLoading: boolean;
   errorMessage: string | null;
   onClearError: () => void;
+  onPreviewMap?: () => void;
 }
 
 export function HomeScreen({
@@ -26,6 +27,7 @@ export function HomeScreen({
   isJoinLoading,
   errorMessage,
   onClearError,
+  onPreviewMap,
 }: HomeScreenProps) {
   const [joinCode, setJoinCode] = useState("");
   const [isEditingCallsign, setIsEditingCallsign] = useState(false);
@@ -253,6 +255,28 @@ export function HomeScreen({
             <span>Up to 15 players per private room</span>
           </div>
         </Card>
+
+        {/* Tactical Map Canvas (Day 4 Feature) */}
+        {onPreviewMap && (
+          <button
+            type="button"
+            onClick={onPreviewMap}
+            className="w-full p-3 min-h-[44px] rounded-2xl bg-game-card/80 border border-game-border hover:border-game-crimson/50 flex items-center justify-between text-xs font-bold text-white active:scale-98 transition-all cursor-pointer shadow-md"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-game-crimson/15 border border-game-crimson/30 flex items-center justify-center text-game-crimson">
+                <MapIcon className="w-4 h-4" />
+              </div>
+              <div className="text-left">
+                <p className="text-white font-extrabold text-xs">Tactical Map Canvas</p>
+                <p className="text-[10px] text-game-text-muted">Full-bleed dark vector map</p>
+              </div>
+            </div>
+            <Badge variant="hunter" className="text-[10px]">
+              Preview
+            </Badge>
+          </button>
+        )}
       </section>
     </div>
   );
