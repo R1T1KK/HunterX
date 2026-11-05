@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* HIDERUSH Dark Gaming Color Tokens */
+  --bg-black: #07090E;
+  --bg-charcoal: #121620;
+  --bg-card: #191D26;
+  --crimson-primary: #FF3B30;
+  --crimson-secondary: #FF4655;
+  --amber-accent: #FF9500;
+  --text-primary: #FFFFFF;
+  --text-muted: #A0A4AE;
+  --border-subtle: #242A38;
+
+  /* Safe Area Variables */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* Base Mobile Gaming Resets */
+html,
+body {
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-black);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Safe Area Utility Classes */
+.safe-top {
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+}
+
+.safe-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+.safe-left {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+}
+
+.safe-right {
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.safe-px {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.safe-py {
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+/* Custom Scrollbar Suppression for App Viewports */
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  box-sizing: border-box;
+}

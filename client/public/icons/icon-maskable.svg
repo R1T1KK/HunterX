@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="radarGlowMask" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF3B30" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#07090E" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="primaryGradientMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF4655" />
+      <stop offset="100%" stop-color="#FF3B30" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full-bleed background for maskable -->
+  <rect width="512" height="512" fill="#07090E" />
+  <circle cx="256" cy="256" r="180" fill="url(#radarGlowMask)" />
+
+  <!-- Radar Rings within safe zone (80% circle) -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#242A38" stroke-width="4" />
+  <circle cx="256" cy="256" r="95" fill="none" stroke="#FF3B30" stroke-width="3" stroke-dasharray="8 8" opacity="0.6" />
+  <circle cx="256" cy="256" r="50" fill="none" stroke="#242A38" stroke-width="4" />
+
+  <!-- Radar Crosshairs -->
+  <line x1="256" y1="80" x2="256" y2="432" stroke="#242A38" stroke-width="3" />
+  <line x1="80" y1="256" x2="432" y2="256" stroke="#242A38" stroke-width="3" />
+
+  <!-- Central Runner Glyph -->
+  <polygon points="256,150 320,340 256,300 192,340" fill="url(#primaryGradientMask)" />
+  <circle cx="256" cy="256" r="16" fill="#FFFFFF" />
+</svg>

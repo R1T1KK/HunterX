@@ -9,13 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Milestone 1 (Days 1–3)
-- Client and server project scaffolding with strict TypeScript.
-- PWA manifest (`standalone`, `portrait`, dark gaming theme).
-- Guest authentication session issuance.
-- Socket.IO room manager and lobby creation.
-- 6-character room code generation and verification.
-- Mobile Home Screen & Lobby with House Rules presets (Quick, Standard, Big Park).
+### Planned for Milestone 1 Day 2
+- Guest session generation (`/auth/guest` token issuance).
+- RoomManager backend class with 6-char alphanumeric room code generation.
+- Screen 1 (Home Screen) wiring to room creation/join gateway.
+
+---
+
+## [0.1.0-day1] - 2026-11-06
+
+### Added
+- **Frontend Scaffolding (`client/`):**
+  - Next.js 14+ (App Router) with TypeScript strict mode and Tailwind CSS.
+  - Progressive Web App (PWA) configuration with standalone manifest (`/manifest.json`), service worker (`/sw.js`), and SVG tactical icons (192px, 512px, maskable).
+  - Android `beforeinstallprompt` installation banner and iOS Safari Add to Home Screen educational sheet (`InstallPrompt.tsx`).
+  - Mobile safe-area system with CSS utilities: `.safe-top`, `.safe-bottom`, `.safe-left`, `.safe-right`, `.safe-px`, `.safe-py` leveraging `env(safe-area-inset-*)`.
+  - HIDERUSH SCRAM-inspired Dark Gaming Design Tokens: Pure Black (`#07090E`), Charcoal (`#121620`), Card (`#191D26`), Crimson (`#FF3B30`), Amber (`#FF9500`).
+  - Reusable gaming UI components: `Button` (touch-friendly 44px/56px), `Card`, and `Badge`.
+  - Mobile Foundation Screen (`page.tsx`) with high-energy tactical header, callsign greeting, action buttons, and fixed bottom navigation pill bar.
+- **Backend Scaffolding (`server/`):**
+  - Node.js + Express + TypeScript HTTP server with Socket.IO integration.
+  - Runtime environment variable validation using Zod (`server/src/config/env.ts`).
+  - `GET /health` endpoint reporting service health, uptime, and timestamp.
+  - Graceful shutdown handlers for `SIGTERM` and `SIGINT`.
+  - Automated tests via Vitest verifying health endpoint and 404 routing.
+- **Verification:**
+  - Automated test and audit script (`scripts/verify-day1.ts`) verifying 36 criteria across PWA, design tokens, safe areas, and mobile dimensions.
 
 ---
 

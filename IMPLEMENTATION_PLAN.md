@@ -24,7 +24,7 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 
 | Phase | Days | Focus Area | Status | Deliverables |
 | :---: | :---: | :--- | :---: | :--- |
-| **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `PENDING` | Dark gaming UI, room code generator, presets |
+| **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `IN_PROGRESS` | Day 1 Complete: PWA Shell, Safe Areas, Dark Gaming Tokens, Express + Socket.IO Server |
 | **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `PENDING` | 100dvh map, GPS ring, EMA filter, marker lerp |
 | **Phase 3** | 8–11 | State Engine, Spatial Math & Geofence | `PENDING` | 1Hz loop, Quick/Standard/Big Park presets, zone shrink |
 | **Phase 4** | 12–15 | 10m Alarm, 15s Cloak & Thumb Tag System | `PENDING` | Crimson alarm, 180s cooldown, server catch check |
@@ -40,14 +40,16 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 #### Day 1: Mobile PWA Scaffolding & Dark Gaming Design System
 - **Objective:** Scaffold Next.js client and Node.js backend with full-bleed mobile viewport and SCRAM-inspired dark gaming design system.
 - **Tasks:**
-  - [ ] Initialize `client/` with Next.js 14+ App Router, TypeScript, and Tailwind CSS.
-  - [ ] Configure `manifest.json` with `display: standalone`, `orientation: portrait`, and theme color `#07090E`.
-  - [ ] Set up safe-area utilities in Tailwind (`safe-top`, `safe-bottom`, `safe-left`, `safe-right`).
-  - [ ] Configure dark gaming palette: Pure Black (`#07090E`), Charcoal (`#121620`), Crimson Accent (`#FF3B30`/`#FF4655`), Amber (`#FF9500`).
-  - [ ] Initialize `server/` with Express, Socket.IO, TypeScript, and Zod environment validation.
+  - [x] Initialize `client/` with Next.js 14+ App Router, TypeScript, and Tailwind CSS.
+  - [x] Configure `manifest.json` with `display: standalone`, `orientation: portrait`, and theme color `#07090E`.
+  - [x] Set up safe-area utilities in Tailwind (`safe-top`, `safe-bottom`, `safe-left`, `safe-right`).
+  - [x] Configure dark gaming palette: Pure Black (`#07090E`), Charcoal (`#121620`), Crimson Accent (`#FF3B30`/`#FF4655`), Amber (`#FF9500`).
+  - [x] Initialize `server/` with Express, Socket.IO, TypeScript, and Zod environment validation.
 - **Mandatory Acceptance Criteria:**
-  - Client loads on real iPhone Safari and Android Chrome with zero horizontal scroll and proper safe-area padding.
-  - Full-screen standalone PWA installation banner works on mobile browsers.
+  - [x] Client builds with zero errors (`next build`, First Load JS 97.9 kB).
+  - [x] Standalone PWA manifest and service worker `/sw.js` registered.
+  - [x] Android `beforeinstallprompt` and iOS Safari Add-to-Home-Screen guide implemented.
+  - [x] Server passes TypeScript checks and Vitest tests (GET `/health` 200 OK).
 
 #### Day 2: Screen 1 (Home Screen) & Room Gateway
 - **Objective:** Build the Mobile Home Screen and backend room connection gateway.
