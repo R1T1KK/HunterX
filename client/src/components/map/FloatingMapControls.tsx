@@ -175,3 +175,4 @@ export function FloatingMapControls({ map, onGpsError }: FloatingMapControlsProp
     </>
   );
 }
+

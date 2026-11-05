@@ -59,3 +59,4 @@ export const FALLBACK_TACTICAL_STYLE = {
     },
   ],
 };
+
