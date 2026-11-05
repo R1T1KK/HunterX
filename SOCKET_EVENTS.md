@@ -23,10 +23,15 @@ const socket = io("https://api.hiderush.fun", {
 
 | Category | Event Name | Direction | Summary |
 | :--- | :--- | :---: | :--- |
-| **Room** | `room:join` | Client $\rightarrow$ Server | Join room socket channel with room code |
-| **Room** | `room:state` | Server $\rightarrow$ Client | Full snapshot of room players and settings |
-| **Room** | `room:player_joined` | Server $\rightarrow$ Client | Broadcast when a new player joins |
-| **Room** | `room:player_left` | Server $\rightarrow$ Client | Broadcast when a player disconnects |
+| **Room** | `room:create` | Client $\rightarrow$ Server | Host initializes a new room |
+| **Room** | `room:created` | Server $\rightarrow$ Client | Confirmation of room creation with room code |
+| **Room** | `room:join` | Client $\rightarrow$ Server | Player joins room with 6-char code |
+| **Room** | `room:joined` | Server $\rightarrow$ Client | Confirmation of joining room with player roster |
+| **Room** | `room:leave` | Client $\rightarrow$ Server | Player voluntarily departs room |
+| **Room** | `room:player-joined` | Server $\rightarrow$ Client | Real-time broadcast to room when new player joins |
+| **Room** | `room:player-left` | Server $\rightarrow$ Client | Real-time broadcast to room when player leaves |
+| **Room** | `room:state-updated` | Server $\rightarrow$ Client | Full snapshot of room players and status |
+| **Room** | `room:error` | Server $\rightarrow$ Client | Error notifications (e.g. ROOM_NOT_FOUND, ROOM_FULL) |
 | **Lobby** | `lobby:settings_update` | Bidirectional | Host modifies hunter count or timer |
 | **Game** | `game:start_countdown` | Server $\rightarrow$ Client | 30s scatter timer commences |
 | **Game** | `game:started` | Server $\rightarrow$ Client | Active match starts; map unlocks |

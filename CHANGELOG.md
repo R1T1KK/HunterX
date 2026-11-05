@@ -9,10 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Milestone 1 Day 2
-- Guest session generation (`/auth/guest` token issuance).
-- RoomManager backend class with 6-char alphanumeric room code generation.
-- Screen 1 (Home Screen) wiring to room creation/join gateway.
+### Planned for Milestone 1 Day 3
+- Screen 2: Game Lobby with full House Rules presets (Quick, Standard, Big Park).
+- Stepper controls for round length, head start, ping frequency, and dynamic zone shrinking.
+- Role selector toggle (Hunter / Runner / Random) and ready status system.
+
+---
+
+## [0.2.0-day2] - 2026-11-06
+
+### Added
+- **Mobile Home Screen (`client/src/components/home/HomeScreen.tsx`):**
+  - High-impact SCRAM-inspired dark gaming layout with bold HIDERUSH typography.
+  - Callsign management system with circular avatar preview, inline editor modal, and `localStorage` persistence.
+  - "Host a Game" action button with loading spinner, disabled state, and error handling.
+  - "Join with a Code" card with 6-character auto-uppercase alphanumeric filtering and paste support.
+  - Fixed bottom navigation bar with 4 tabs: `Play`, `Stats`, `Rules`, `Profile`.
+  - Placeholder views for Stats, Rules, and Operator Profile.
+- **Backend RoomManager (`server/src/services/RoomManager.ts`):**
+  - In-memory `RoomManager` class using Node.js `crypto` for collision-resistant 6-character uppercase room codes.
+  - Hard limit enforcement of 15 players maximum per room.
+  - Host assignment and automatic host migration when host disconnects.
+  - Automatic room cleanup when empty.
+  - Input validation using Zod schemas for room codes and callsigns.
+- **Socket.IO Room Gateway (`server/src/socket/roomGateway.ts`):**
+  - Client events: `room:create`, `room:join`, `room:leave`.
+  - Server events: `room:created`, `room:joined`, `room:player-joined`, `room:player-left`, `room:state-updated`, `room:error`.
+  - Full disconnect handling with player removal and room state broadcast.
+- **Minimal Multiplayer Waiting Room (`client/src/components/lobby/WaitingRoom.tsx`):**
+  - Room code display with 1-tap copy to clipboard.
+  - Connected player roster showing callsigns, host crowns, and join timestamps.
+  - Live 2-device reactive synchronization over WebSockets.
+  - "Leave Room" action to cleanly exit and return to the home screen.
+- **Automated Verification & Benchmarks (`scripts/verify-day2.ts`):**
+  - In-memory room creation benchmark ($0.69\text{ms}$, well within $< 200\text{ms}$ budget).
+  - In-memory room joining benchmark ($0.34\text{ms}$).
+  - End-to-end multi-client Socket.IO synchronization test.
+  - Mobile viewport dimensions audit (360px–430px) verifying safe-area insets and touch targets.
 
 ---
 

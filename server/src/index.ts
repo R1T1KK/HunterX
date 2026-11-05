@@ -4,6 +4,7 @@ import { Server as SocketIOServer } from "socket.io";
 import cors from "cors";
 import { env } from "./config/env.js";
 import { HealthResponse } from "./types/index.js";
+import { registerRoomHandlers } from "./socket/roomGateway.js";
 
 export const app = express();
 export const server = http.createServer(app);
@@ -26,13 +27,10 @@ export const io = new SocketIOServer(server, {
   },
 });
 
-// Basic Socket connection logger (no room logic yet per Day 1 requirements)
+// Socket connection gateway
 io.on("connection", (socket) => {
   console.log(`🔌 [Socket.IO] Client connected: ${socket.id}`);
-
-  socket.on("disconnect", (reason) => {
-    console.log(`🔌 [Socket.IO] Client disconnected: ${socket.id} (${reason})`);
-  });
+  registerRoomHandlers(io, socket);
 });
 
 // Health check endpoint
@@ -85,7 +83,6 @@ export function gracefulShutdown(signal: string) {
     });
   });
 
-  // Force exit after 10s if graceful shutdown hangs
   setTimeout(() => {
     console.error("⚠️ Forced shutdown after 10s timeout.");
     process.exit(1);
