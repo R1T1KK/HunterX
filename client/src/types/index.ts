@@ -1,5 +1,34 @@
 export type GPSStatus = "LOCKED" | "ACQUIRING" | "UNAVAILABLE" | "DENIED";
 
+export type GPSSignalQuality =
+  | "EXCELLENT"
+  | "MODERATE"
+  | "WEAK"
+  | "ACQUIRING"
+  | "SIGNAL_LOST"
+  | "DENIED"
+  | "UNAVAILABLE";
+
+export interface GeolocationCoords {
+  lat: number;
+  lng: number;
+  accuracy: number; // in meters
+  altitude: number | null;
+  altitudeAccuracy: number | null;
+  heading: number | null;
+  speed: number | null;
+  timestamp: number;
+}
+
+export interface GeolocationState {
+  status: GPSStatus;
+  quality: GPSSignalQuality;
+  qualityLabel: string;
+  coords: GeolocationCoords | null;
+  errorMessage: string | null;
+  isHighAccuracy: boolean;
+}
+
 export interface Player {
   playerId: string;
   socketId: string;

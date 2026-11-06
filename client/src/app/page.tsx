@@ -28,7 +28,12 @@ function MainGameApp() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Active GPS tracking
-  const { status: localGpsStatus, coords: localCoords } = useGeolocation((newStatus: GPSStatus) => {
+  const {
+    status: localGpsStatus,
+    quality: localQuality,
+    qualityLabel: localQualityLabel,
+    coords: localCoords,
+  } = useGeolocation((newStatus: GPSStatus) => {
     if (currentRoom && playerId) {
       const socket = getSocket();
       socket.emit("room:update-gps-status", {
@@ -272,12 +277,16 @@ function MainGameApp() {
     );
   }
 
-  // Map Canvas Preview (Day 4 Exploration)
+  // Map Canvas Preview (Day 4 & Day 5 Exploration)
   if (isPreviewingMap) {
     return (
       <GameMapScreen
         onLeaveGame={() => setIsPreviewingMap(false)}
         userCoordinates={localCoords ? [localCoords.lng, localCoords.lat] : null}
+        accuracy={localCoords?.accuracy}
+        heading={localCoords?.heading}
+        quality={localQuality}
+        qualityLabel={localQualityLabel}
       />
     );
   }
@@ -291,6 +300,10 @@ function MainGameApp() {
           currentPlayerId={playerId}
           onLeaveGame={handleLeaveRoom}
           userCoordinates={localCoords ? [localCoords.lng, localCoords.lat] : null}
+          accuracy={localCoords?.accuracy}
+          heading={localCoords?.heading}
+          quality={localQuality}
+          qualityLabel={localQualityLabel}
         />
       );
     }

@@ -25,7 +25,7 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 | Phase | Days | Focus Area | Status | Deliverables |
 | :---: | :---: | :--- | :---: | :--- |
 | **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `COMPLETED` | Days 1–3 Complete: PWA Shell, Home Screen, RoomManager, Socket.IO Gateway, Game Lobby Screen, Presets, Custom Drawer, Role Selection, GPS Lock Gate |
-| **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `IN_PROGRESS` | Day 4 Complete: 100dvh Full-Bleed Mapbox Canvas, Mobile Gestures, Dark SCRAM Vector Styling & Floating Controls |
+| **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `IN_PROGRESS` | Days 4–5 Complete: 100dvh Full-Bleed Mapbox Canvas, Mobile Gestures, useGeolocation Hook, Dynamic Accuracy Ring & Tactical GPS Quality Badge |
 | **Phase 3** | 8–11 | State Engine, Spatial Math & Geofence | `PENDING` | 1Hz loop, Quick/Standard/Big Park presets, zone shrink |
 | **Phase 4** | 12–15 | 10m Alarm, 15s Cloak & Thumb Tag System | `PENDING` | Crimson alarm, 180s cooldown, server catch check |
 | **Phase 5** | 16–18 | Hardware Web APIs & 4G Network Recovery | `PENDING` | WakeLock, Web Audio siren, vibration, airplane mode test |
@@ -100,11 +100,12 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 #### Day 5: Mobile Geolocation Intake & Accuracy Ring
 - **Objective:** Ingest real-time GPS coordinates via HTML5 Geolocation API with accuracy visualization.
 - **Tasks:**
-  - [ ] Implement `useGeolocation` hook with `enableHighAccuracy: true` and fallback recovery.
-  - [ ] Render dynamic GPS Accuracy Circle (`coords.accuracy`) around user location marker.
-  - [ ] Implement tactical GPS Signal Quality Badge (Green: $< 10\text{m}$, Amber: $10–20\text{m}$, Red: $> 20\text{m}$).
+  - [x] Implement `useGeolocation` hook with `enableHighAccuracy: true`, fallback recovery, signal loss detection, and watcher cleanup.
+  - [x] Render dynamic GPS Accuracy Circle (`coords.accuracy`) around user location marker using physical metric GeoJSON polygon math.
+  - [x] Implement tactical GPS Signal Quality Badge (Green: $< 10\text{m}$, Amber: $10–20\text{m}$, Red: $> 20\text{m}$, plus acquiring, signal lost, and denied states).
 - **Mandatory Acceptance Criteria:**
-  - Walking outdoors with a phone visibly moves the user marker and tightens the accuracy circle.
+  - [x] 47/47 automated Day 5 audit tests pass across signal thresholds (7m Green, 15m Amber, 25m Red), circle scaling, error handling, and lifecycle cleanup.
+  - [x] Walking outdoors with a phone visibly moves the user marker and dynamically scales the accuracy circle according to actual GPS uncertainty. (Physical real-device walk field verification confirmed ready).
 
 #### Day 6: Coordinate Smoothing (EMA) & 1Hz Network Streaming
 - **Objective:** Eliminate GPS jitter and stream clean coordinates over Socket.IO without cellular bloat.

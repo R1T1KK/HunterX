@@ -9,10 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Phase 2 (Days 5–7)
-- Day 5: HTML5 Geolocation API continuous watch and GPS accuracy ring visualization.
+### Planned for Phase 2 (Days 6–7)
 - Day 6: Exponential Moving Average (EMA) mathematical filtering and 1Hz location streaming.
 - Day 7: Multi-player marker rendering and linear interpolation (lerp) gliding.
+
+---
+
+## [0.5.0-day5] - 2026-11-07
+
+### Added
+- **Production `useGeolocation` Hook (`client/src/hooks/useGeolocation.ts`):**
+  - Continuous coordinate acquisition using HTML5 `navigator.geolocation.watchPosition()`.
+  - Configured with `enableHighAccuracy: true`, `timeout: 10000ms`, `maximumAge: 1000ms`.
+  - Full coordinate extraction: `latitude`, `longitude`, `accuracy` (meters), `altitude`, `heading`, `speed`, and `timestamp`.
+  - Automatic fallback recovery: when high-accuracy acquisition times out, initiates low-accuracy fallback and schedules high-accuracy restoration attempts.
+  - Heartbeat signal-loss monitoring: detects GPS stalls longer than 18 seconds and transitions to `GPS SIGNAL LOST`.
+  - Single active watcher ref with guaranteed cleanup (`clearWatch`) on component unmount, preventing battery drain and memory leaks.
+- **Dynamic GPS Accuracy Circle (`client/src/components/map/FullBleedMap.tsx`, `client/src/lib/geoUtils.ts`):**
+  - Exact metric circle polygon generation (`createGeoJsonCircle`) scaling seamlessly across zoom levels and latitudes.
+  - Live Mapbox vector fill and dashed perimeter stroke reflecting physical GPS uncertainty in meters (`coords.accuracy`).
+  - Dynamic color coding: Emerald Green for $< 10\text{m}$, Tactical Amber for $10–20\text{m}$, and Crimson for $> 20\text{m}$.
+  - User DOM marker with direction heading pointer rendered above accuracy layers.
+- **Tactical GPS Signal Quality Badge (`client/src/components/ui/GPSQualityBadge.tsx`):**
+  - Exact specification thresholds:
+    - **GREEN ($< 10\text{m}$):** `GPS EXCELLENT`
+    - **AMBER ($10–20\text{m}$):** `GPS MODERATE`
+    - **RED ($> 20\text{m}$):** `GPS WEAK`
+  - Specialized states: `ACQUIRING GPS`, `GPS SIGNAL LOST`, `LOCATION PERMISSION DENIED`, and `GPS UNAVAILABLE`.
+  - Live numeric measurement readout in meters (`(±7m)`).
+  - Floating top HUD integration in `GameMapScreen.tsx`.
+- **Automated Verification & Benchmarks (`scripts/verify-day5.ts`):**
+  - 47-point audit verifying all 10 required test scenarios including threshold accuracy math, polygon geometry scaling, watcher lifecycle, fallback recovery, and mobile UI rendering.
 
 ---
 

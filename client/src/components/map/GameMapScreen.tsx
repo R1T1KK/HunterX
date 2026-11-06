@@ -2,14 +2,19 @@
 
 import React, { useState } from "react";
 import { FullBleedMap } from "./FullBleedMap";
-import { Room } from "@/types";
-import { ArrowLeft, Shield, Radio, Users } from "lucide-react";
+import { Room, GPSSignalQuality } from "@/types";
+import { GPSQualityBadge } from "@/components/ui/GPSQualityBadge";
+import { ArrowLeft, Shield, Users } from "lucide-react";
 
 interface GameMapScreenProps {
   room?: Room | null;
   currentPlayerId?: string;
   onLeaveGame?: () => void;
   userCoordinates?: [number, number] | null;
+  accuracy?: number | null;
+  heading?: number | null;
+  quality?: GPSSignalQuality;
+  qualityLabel?: string;
 }
 
 export function GameMapScreen({
@@ -17,6 +22,10 @@ export function GameMapScreen({
   currentPlayerId,
   onLeaveGame,
   userCoordinates,
+  accuracy,
+  heading,
+  quality = "ACQUIRING",
+  qualityLabel,
 }: GameMapScreenProps) {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
@@ -27,10 +36,14 @@ export function GameMapScreen({
 
   return (
     <div className="fixed inset-0 w-[100vw] h-[100dvh] overflow-hidden bg-game-black select-none">
-      {/* 1. Layer 0: Full-Bleed Mapbox Canvas */}
-      <FullBleedMap userCoordinates={userCoordinates}>
+      {/* 1. Layer 0: Full-Bleed Mapbox Canvas with Dynamic Accuracy Circle */}
+      <FullBleedMap
+        userCoordinates={userCoordinates}
+        accuracy={accuracy}
+        heading={heading}
+      >
         {/* 2. Layer 1: Floating Tactical Top HUD */}
-        <header className="fixed top-0 left-0 right-0 z-20 safe-top safe-px pt-2 pb-1 pointer-events-none">
+        <header className="fixed top-0 left-0 right-0 z-20 safe-top safe-px pt-2 pb-1 pointer-events-none space-y-1.5">
           <div className="max-w-md mx-auto flex items-center justify-between pointer-events-auto">
             {/* Exit Match Action */}
             <button
@@ -58,6 +71,15 @@ export function GameMapScreen({
               <Users className="w-3.5 h-3.5 text-game-crimson" />
               <span>{playerCount}</span>
             </div>
+          </div>
+
+          {/* Tactical GPS Signal Quality Badge (Center Floating) */}
+          <div className="max-w-md mx-auto flex justify-center pointer-events-auto">
+            <GPSQualityBadge
+              quality={quality}
+              accuracy={accuracy}
+              qualityLabel={qualityLabel}
+            />
           </div>
         </header>
 
