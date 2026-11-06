@@ -29,6 +29,38 @@ export interface GeolocationState {
   isHighAccuracy: boolean;
 }
 
+export interface PlayerLocation {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  heading: number | null;
+  speed: number | null;
+  timestamp: number;
+  updatedAt: number;
+}
+
+export interface SmoothedCoordinate {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  heading: number | null;
+  speed: number | null;
+  timestamp: number;
+  distanceDeltaMeters: number;
+  isSmoothed: boolean;
+}
+
+export interface LocationUpdatePayload {
+  roomCode: string;
+  playerId: string;
+  lat: number;
+  lng: number;
+  accuracy: number;
+  heading?: number | null;
+  speed?: number | null;
+  timestamp: number;
+}
+
 export interface Player {
   playerId: string;
   socketId: string;
@@ -37,6 +69,7 @@ export interface Player {
   isHost: boolean;
   isReady: boolean;
   gpsStatus: GPSStatus;
+  lastLocation?: PlayerLocation;
 }
 
 export type RoomStatus = "WAITING" | "STARTING" | "IN_PROGRESS" | "COMPLETED";

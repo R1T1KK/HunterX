@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { getSocket } from "@/services/socketService";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useLocationStreamer } from "@/hooks/useLocationStreamer";
 import { Room, HouseRules, RoleSettings, SocketErrorPayload, GPSStatus } from "@/types";
 import { HomeScreen } from "@/components/home/HomeScreen";
 import { GameLobbyScreen } from "@/components/lobby/GameLobbyScreen";
@@ -32,7 +33,7 @@ function MainGameApp() {
     status: localGpsStatus,
     quality: localQuality,
     qualityLabel: localQualityLabel,
-    coords: localCoords,
+    coords: rawLocalCoords,
   } = useGeolocation((newStatus: GPSStatus) => {
     if (currentRoom && playerId) {
       const socket = getSocket();
@@ -43,6 +44,19 @@ function MainGameApp() {
       });
     }
   });
+
+  // Day 6: EMA Coordinate Smoothing & 1Hz Throttled Location Streaming
+  const { smoothedCoords } = useLocationStreamer({
+    roomCode: currentRoom?.roomCode,
+    playerId,
+    rawCoords: rawLocalCoords,
+    enabled: Boolean(currentRoom || isPreviewingMap),
+    alpha: 0.25,
+    throttleMs: 1000,
+  });
+
+  // Active coordinates: prefer smoothed coordinates for jitter suppression
+  const activeDisplayCoords = smoothedCoords || rawLocalCoords;
 
   // Sync initial GPS status on room join/create
   useEffect(() => {
@@ -277,14 +291,14 @@ function MainGameApp() {
     );
   }
 
-  // Map Canvas Preview (Day 4 & Day 5 Exploration)
+  // Map Canvas Preview (Day 4 & Day 5 & Day 6 Exploration)
   if (isPreviewingMap) {
     return (
       <GameMapScreen
         onLeaveGame={() => setIsPreviewingMap(false)}
-        userCoordinates={localCoords ? [localCoords.lng, localCoords.lat] : null}
-        accuracy={localCoords?.accuracy}
-        heading={localCoords?.heading}
+        userCoordinates={activeDisplayCoords ? [activeDisplayCoords.lng, activeDisplayCoords.lat] : null}
+        accuracy={activeDisplayCoords?.accuracy}
+        heading={activeDisplayCoords?.heading}
         quality={localQuality}
         qualityLabel={localQualityLabel}
       />
@@ -299,9 +313,9 @@ function MainGameApp() {
           room={currentRoom}
           currentPlayerId={playerId}
           onLeaveGame={handleLeaveRoom}
-          userCoordinates={localCoords ? [localCoords.lng, localCoords.lat] : null}
-          accuracy={localCoords?.accuracy}
-          heading={localCoords?.heading}
+          userCoordinates={activeDisplayCoords ? [activeDisplayCoords.lng, activeDisplayCoords.lat] : null}
+          accuracy={activeDisplayCoords?.accuracy}
+          heading={activeDisplayCoords?.heading}
           quality={localQuality}
           qualityLabel={localQualityLabel}
         />

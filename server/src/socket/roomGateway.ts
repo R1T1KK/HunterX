@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { roomManager, RoomError } from "../services/RoomManager.js";
-import { GPSStatus, HouseRules, RoleSettings, RulesPreset } from "../types/index.js";
+import { locationManager } from "../services/LocationManager.js";
+import { GPSStatus, HouseRules, RoleSettings, RulesPreset, LocationUpdatePayload } from "../types/index.js";
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
   // 1. Host creates a room
@@ -382,12 +383,42 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     }
   );
 
-  // 10. Socket disconnect handling
+  // 10. Player streams validated location update (Max 1 Hz)
+  socket.on(
+    "location:update",
+    (
+      payload: LocationUpdatePayload,
+      callback?: (response: { success: boolean; data?: unknown; error?: unknown }) => void
+    ) => {
+      const result = locationManager.processLocationUpdate(payload, socket.id);
+
+      if (!result.success) {
+        if (typeof callback === "function") {
+          callback({ success: false, error: result.error });
+        }
+        return;
+      }
+
+      // Broadcast location update to the room members
+      socket.to(payload.roomCode).emit("location:player-updated", {
+        playerId: payload.playerId,
+        location: result.location,
+      });
+
+      if (typeof callback === "function") {
+        callback({ success: true, data: { location: result.location } });
+      }
+    }
+  );
+
+  // 11. Socket disconnect handling
   socket.on("disconnect", () => {
     const result = roomManager.removeSocket(socket.id);
 
     if (result.room && result.player) {
       console.log(`🔌 [Room] Socket disconnected: ${result.player.callsign} from room ${result.room.roomCode}`);
+
+      locationManager.clearPlayer(result.player.playerId);
 
       io.to(result.room.roomCode).emit("room:player-left", {
         playerId: result.player.playerId,

@@ -8,6 +8,27 @@ export interface HealthResponse {
 
 export type GPSStatus = "LOCKED" | "ACQUIRING" | "UNAVAILABLE" | "DENIED";
 
+export interface PlayerLocation {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  heading: number | null;
+  speed: number | null;
+  timestamp: number;
+  updatedAt: number;
+}
+
+export interface LocationUpdatePayload {
+  roomCode: string;
+  playerId: string;
+  lat: number;
+  lng: number;
+  accuracy: number;
+  heading?: number | null;
+  speed?: number | null;
+  timestamp: number;
+}
+
 export interface Player {
   playerId: string;
   socketId: string;
@@ -16,6 +37,7 @@ export interface Player {
   isHost: boolean;
   isReady: boolean;
   gpsStatus: GPSStatus;
+  lastLocation?: PlayerLocation;
 }
 
 export type RoomStatus = "WAITING" | "STARTING" | "IN_PROGRESS" | "COMPLETED";

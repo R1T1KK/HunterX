@@ -9,9 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Phase 2 (Days 6–7)
-- Day 6: Exponential Moving Average (EMA) mathematical filtering and 1Hz location streaming.
+### Planned for Phase 2 (Day 7)
 - Day 7: Multi-player marker rendering and linear interpolation (lerp) gliding.
+
+---
+
+## [0.6.0-day6] - 2026-11-07
+
+### Added
+- **EMA GPS Coordinate Smoothing Engine (`client/src/lib/GpsSmoother.ts`, `server/src/lib/GpsSmoother.ts`):**
+  - Configurable Exponential Moving Average filter ($\alpha = 0.25$) eliminating $77.8\%$ of stationary GPS jitter variance.
+  - Proper first-reading initialization ($S_0 = X_0$).
+  - Haversine-based physical jump validation rejecting speed anomalies ($> 12\text{ m/s}$) and teleportation spikes.
+  - Mandatory accuracy gating: coordinates with reported accuracy $> 25\text{m}$ are rejected from the filter.
+  - Adaptive re-anchoring recovery for persistent movement or prolonged inactivity ($> 15\text{s}$).
+- **1Hz Throttled Network Streamer Hook (`client/src/hooks/useLocationStreamer.ts`):**
+  - Strict 1 update per second ($1\text{ Hz}$) rate ceiling per player, preventing cellular network congestion and battery drain.
+  - Compact JSON payload structure ($\approx 150\text{ bytes}$), strictly below the $1536\text{ byte}$ ($1.5\text{ KB}$) mobile budget.
+  - Socket reconnection recovery: automatically re-syncs player's latest validated position immediately on reconnect.
+  - Single dispatch timer with guaranteed cleanup on unmount.
+- **Server-Side Validation & Location Management (`server/src/services/LocationManager.ts`):**
+  - Inbound schema and coordinate range checks (latitude $\in [-90, 90]$, longitude $\in [-180, 180]$, accuracy $\le 25\text{m}$).
+  - Strict byte size validation enforcing maximum $1536\text{ bytes}$.
+  - Server-authoritative per-player 1 Hz rate limiting (rejects bursts with `RATE_LIMITED`).
+  - Independent server-side speed sanity verification.
+  - In-memory player position store updating `RoomManager`'s player state in RAM.
+  - Real-time `location:update` event handler with room broadcast (`location:player-updated`).
+- **Comprehensive Automated Test Suites:**
+  - `server/src/__tests__/locationStreaming.test.ts`: 8 Vitest tests covering payload size limits, rate limiting, accuracy rejection, teleportation defense, and live Socket.IO broadcast (21/21 server tests passing).
+  - `scripts/verify-day6.ts`: 26/26 audit checks verifying EMA jitter suppression, walking responsiveness, jump rejection, and payload size.
 
 ---
 

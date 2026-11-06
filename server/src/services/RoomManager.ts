@@ -8,6 +8,7 @@ import {
   RoleSettings,
   RulesPreset,
   GPSStatus,
+  PlayerLocation,
 } from "../types/index.js";
 
 // Input validation schemas
@@ -409,6 +410,31 @@ export class RoomManager {
     }
 
     player.gpsStatus = gpsStatus;
+    room.updatedAt = new Date().toISOString();
+    return room;
+  }
+
+  /**
+   * Updates player's last validated location.
+   */
+  public updatePlayerLocation(
+    roomCode: string,
+    playerId: string,
+    location: PlayerLocation
+  ): Room {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+
+    if (!room) {
+      throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+    }
+
+    const player = room.players.find((p) => p.playerId === playerId);
+    if (!player) {
+      throw new RoomError("PLAYER_NOT_IN_ROOM", "Player is not in this room.");
+    }
+
+    player.lastLocation = location;
     room.updatedAt = new Date().toISOString();
     return room;
   }
