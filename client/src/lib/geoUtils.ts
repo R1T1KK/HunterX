@@ -133,3 +133,4 @@ export function evaluateSignalQuality(
     fillColor: "rgba(255, 59, 48, 0.22)",
   };
 }
+

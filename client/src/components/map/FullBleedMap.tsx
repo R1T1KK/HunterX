@@ -291,11 +291,20 @@ export function FullBleedMap({
       {/* Token Missing Warning Banner (Graceful Dark Gaming Fallback) */}
       {tokenMissing && (
         <aside aria-label="Configuration notice" className="absolute top-16 left-3 right-3 z-30 max-w-sm mx-auto p-4 rounded-3xl bg-game-charcoal/95 border border-game-amber/40 shadow-2xl backdrop-blur-md text-white space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-game-amber shrink-0" />
-            <h4 className="text-xs font-black uppercase tracking-wider text-game-amber">
-              Mapbox Token Needed
-            </h4>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-game-amber shrink-0" />
+              <h4 className="text-xs font-black uppercase tracking-wider text-game-amber">
+                Mapbox Token Needed
+              </h4>
+            </div>
+            <button
+              onClick={() => setTokenMissing(false)}
+              className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs text-neutral-300 hover:text-white transition-colors"
+              aria-label="Dismiss banner"
+            >
+              ✕
+            </button>
           </div>
           <p className="text-[11px] text-game-text-muted leading-relaxed">
             Add your public Mapbox access token to <code className="text-white bg-black/40 px-1 py-0.5 rounded font-mono">.env.local</code> as:
