@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { roomManager, RoomError } from "../services/RoomManager.js";
 import { locationManager } from "../services/LocationManager.js";
 import { gameManager } from "../services/GameManager.js";
+import { RoleAssignmentEngine } from "../services/RoleAssignmentEngine.js";
 import { GPSStatus, HouseRules, RoleSettings, RulesPreset, LocationUpdatePayload } from "../types/index.js";
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
@@ -277,6 +278,66 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       }
     }
   );
+
+  // 6.1 Host manually assigns Hunter roles
+  socket.on(
+    "room:assign-manual-roles",
+    (
+      payload: { roomCode: string; requesterPlayerId: string; hunterPlayerIds: string[] },
+      callback?: (response: { success: boolean; data?: unknown; error?: unknown }) => void
+    ) => {
+      try {
+        const updatedRoom = roomManager.assignManualRoles(
+          payload.roomCode,
+          payload.requesterPlayerId,
+          payload.hunterPlayerIds
+        );
+
+        console.log(
+          `🎯 [Room] Manual roles assigned for ${payload.roomCode}: Hunters = [${payload.hunterPlayerIds.join(", ")}]`
+        );
+
+        RoleAssignmentEngine.broadcastRoleAssignments(io, updatedRoom);
+
+        if (typeof callback === "function") {
+          callback({ success: true, data: { room: updatedRoom } });
+        }
+      } catch (err: unknown) {
+        const error =
+          err instanceof RoomError
+            ? { code: err.code, message: err.message }
+            : { code: "MANUAL_ROLE_ASSIGNMENT_FAILED", message: (err as Error).message };
+
+        console.error(`❌ [Room] Manual role assignment rejected:`, error);
+        socket.emit("room:error", error);
+
+        if (typeof callback === "function") {
+          callback({ success: false, error });
+        }
+      }
+    }
+  );
+
+  // 6.2 Strict Role Security: Reject client-side role tampering / forgery
+  const handleClientRoleTampering = (
+    _payload: unknown,
+    callback?: (response: { success: boolean; error: { code: string; message: string } }) => void
+  ) => {
+    const error = {
+      code: "UNAUTHORIZED_ROLE_MUTATION",
+      message: "Client-side role modification is strictly forbidden. Roles are server-authoritative.",
+    };
+    console.warn(`🛡️ [Security] Blocked unauthorized client role tampering attempt from socket ${socket.id}`);
+    socket.emit("room:error", error);
+    if (typeof callback === "function") {
+      callback({ success: false, error });
+    }
+  };
+
+  socket.on("role:change", handleClientRoleTampering);
+  socket.on("player:set-role", handleClientRoleTampering);
+  socket.on("role:set", handleClientRoleTampering);
+  socket.on("role:update", handleClientRoleTampering);
 
   // 7. Player updates ready status
   socket.on(

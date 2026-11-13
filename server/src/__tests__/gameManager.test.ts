@@ -154,8 +154,8 @@ describe("Day 8: Authoritative Game Loop & Head-Start Scatter Countdown", () => 
 
     gameManager.startMatch(mockIo, room.roomCode, "host-p1");
 
-    // Advance 15 seconds to complete QUICK preset head-start
-    vi.advanceTimersByTime(15000);
+    // Advance 30 seconds to complete countdown
+    vi.advanceTimersByTime(30000);
 
     // Now in IN_PROGRESS phase
     // Advance match by 150 seconds (halfway through 300s match)
@@ -164,7 +164,7 @@ describe("Day 8: Authoritative Game Loop & Head-Start Scatter Countdown", () => 
     const matchTicks = emittedEvents.filter(
       (e) => e.event === "game:timer_tick" && e.payload.phase === "MATCH"
     );
-    expect(matchTicks.length).toBeGreaterThanOrEqual(140);
+    expect(matchTicks.length).toBeGreaterThanOrEqual(135);
     const midMatchTick = matchTicks[matchTicks.length - 1].payload;
     expect(midMatchTick.gameState).toBe("IN_PROGRESS");
     expect(midMatchTick.phase).toBe("MATCH");

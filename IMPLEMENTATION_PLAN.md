@@ -147,11 +147,13 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 #### Day 9: Role Assignment Engine & Preset Handler
 - **Objective:** Server-authoritative role distribution and house rules enforcement.
 - **Tasks:**
-  - [ ] Validate Hunter allocation (1, 2, or 3) and execute cryptographic random or manual assignment.
-  - [ ] Enforce preset parameters (round length, ping intervals, zone settings).
-  - [ ] Dispatch role-specific payloads (`role:assigned`).
+  - [x] Validate Hunter allocation (1, 2, or 3) and execute cryptographic random (`crypto.randomInt` Fisher-Yates) or host manual assignment (`RoleAssignmentEngine.ts`).
+  - [x] Enforce preset parameters (`QUICK`, `STANDARD`, `BIG_PARK`, `CUSTOM`) with strict Zod boundary validation (`PresetHandler.ts`).
+  - [x] Dispatch role-specific payloads (`role:assigned` private socket event and `room:roles-assigned` public broadcast).
+  - [x] Enforce server-authoritative security: strictly reject client-side role modification attempts (`role:change`, `player:set-role`) with `UNAUTHORIZED_ROLE_MUTATION`.
 - **Mandatory Acceptance Criteria:**
-  - Clients receive verified roles; no client can tamper with its assigned team.
+  - [x] Clients receive verified roles; no client can tamper with its assigned team.
+  - [x] 39/39 Day 9 automated audit tests pass, 43/43 server tests pass across 6 suites, 0 lint/build errors.
 
 #### Day 10: Spatial Distance Engine & 1Hz Haversine Matrix
 - **Objective:** Compute pairwise spherical distances between all active players on the backend.

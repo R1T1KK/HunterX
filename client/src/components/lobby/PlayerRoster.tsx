@@ -96,6 +96,18 @@ export function PlayerRoster({ players, maxPlayers, currentPlayerId }: PlayerRos
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {player.role && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider ${
+                      player.role === "HUNTER"
+                        ? "bg-game-crimson/20 border-game-crimson/50 text-game-crimson"
+                        : "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
+                    }`}
+                  >
+                    {player.role}
+                  </span>
+                )}
+
                 {player.isReady ? (
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] font-extrabold text-emerald-400">
                     <CheckCircle2 className="w-3 h-3" />

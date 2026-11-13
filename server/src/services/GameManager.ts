@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { roomManager } from "./RoomManager.js";
+import { RoleAssignmentEngine } from "./RoleAssignmentEngine.js";
 import {
   GameState,
   MatchClockPayload,
@@ -103,7 +104,10 @@ export class GameManager {
       roundDurationSeconds: roundDuration,
     };
 
-    // 3. Emit initial Countdown Start event
+    // 3. Dispatch authoritative role:assigned event to each player's socket
+    RoleAssignmentEngine.broadcastRoleAssignments(io, updatedRoom, matchId);
+
+    // 4. Emit initial Countdown Start event
     const countdownPayload: GameCountdownPayload = {
       matchId,
       gameState: "COUNTDOWN",

@@ -9,10 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Phase 3 (Days 9–11)
-- Day 9: Role assignment engine and house rule preset handler.
-- Day 10: Server-authoritative spatial math and shrinking geofence polygon.
-- Day 11: Zone boundary alert, out-of-bounds warning, and elimination mechanics.
+### Planned for Phase 3 (Days 10–11)
+- Day 10: Spatial distance engine & 1Hz Haversine matrix.
+- Day 11: Play zone (geofence) & dynamic shrinking engine.
+
+---
+
+## [0.9.0-day9] - 2026-11-13
+
+### Added
+- **Server-Authoritative Role Assignment Engine (`server/src/services/RoleAssignmentEngine.ts`):**
+  - Hunter allocation supporting exactly 1, 2, or 3 Hunters with automatic Runner assignment for remaining players.
+  - Cryptographically secure Fisher-Yates shuffle utilizing Node.js `crypto.randomInt` CSPRNG entropy sources to guarantee mathematically unbiased, non-predictable assignments.
+  - Authorized manual role assignment strictly restricted to the verified room host, rejecting duplicates, invalid player IDs, and non-host requests.
+  - Private role dispatch via individual player socket channels (`role:assigned`) alongside public roster updates (`room:roles-assigned`).
+- **Comprehensive Preset Handler (`server/src/services/PresetHandler.ts`):**
+  - Centralized official game presets: `QUICK`, `STANDARD`, `BIG_PARK`, and `CUSTOM`.
+  - Strict Zod validation schemas enforcing boundaries (round length 3–60 min, head-start 10–120s, ping interval 15–180s, zone size 100–5000m).
+  - Out-of-bounds parameters and unauthorized preset mutations safely rejected with typed `INVALID_PRESET` errors.
+- **Client Role Anti-Tampering Shield (`server/src/socket/roomGateway.ts`):**
+  - Strict server-authoritative guard rejecting client attempts to forge or modify roles (`role:change`, `player:set-role`, `role:set`, `role:update`) with `UNAUTHORIZED_ROLE_MUTATION`.
+- **Roster Role Visual Indicators (`client/src/components/lobby/PlayerRoster.tsx`):**
+  - Crimson `HUNTER` and Cyan `RUNNER` tactical badges rendered in player lobby roster.
+- **Automated Verification & Test Suites (`scripts/verify-day9.ts`, `server/src/__tests__/roleAssignment.test.ts`):**
+  - 39/39 automated Day 9 audit checks passed (0 failures).
+  - 43/43 server Vitest tests passing across all 6 test suites.
+  - 213/213 cumulative automated test assertions passed across Days 5, 6, 7, 8, and 9.
 
 ---
 

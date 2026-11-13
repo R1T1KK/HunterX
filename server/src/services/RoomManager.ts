@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 import { z } from "zod";
+import { PresetHandler, HOUSE_RULES_PRESETS } from "./PresetHandler.js";
+import { RoleAssignmentEngine } from "./RoleAssignmentEngine.js";
 import {
   Room,
   Player,
@@ -306,33 +308,11 @@ export class RoomManager {
       throw new RoomError("NOT_HOST", "Only the host can modify house rules.");
     }
 
-    if (room.status !== "WAITING") {
+    if (room.status !== "WAITING" && (room.status as string) !== "LOBBY") {
       throw new RoomError("INVALID_STATE", "Cannot modify rules while game is starting or in progress.");
     }
 
-    if (rulesUpdate.preset !== "CUSTOM") {
-      // Apply exact preset defaults
-      const presetDefaults = HOUSE_RULES_PRESETS[rulesUpdate.preset];
-      room.rules = {
-        preset: rulesUpdate.preset,
-        ...presetDefaults,
-      };
-    } else {
-      // Custom overrides
-      room.rules = {
-        ...room.rules,
-        preset: "CUSTOM",
-        ...(rulesUpdate.roundLengthMinutes !== undefined && { roundLengthMinutes: rulesUpdate.roundLengthMinutes }),
-        ...(rulesUpdate.headStartSeconds !== undefined && { headStartSeconds: rulesUpdate.headStartSeconds }),
-        ...(rulesUpdate.pingIntervalSeconds !== undefined && { pingIntervalSeconds: rulesUpdate.pingIntervalSeconds }),
-        ...(rulesUpdate.playZoneEnabled !== undefined && { playZoneEnabled: rulesUpdate.playZoneEnabled }),
-        ...(rulesUpdate.zoneSizeMeters !== undefined && { zoneSizeMeters: rulesUpdate.zoneSizeMeters }),
-        ...(rulesUpdate.zoneShrinks !== undefined && { zoneShrinks: rulesUpdate.zoneShrinks }),
-        ...(rulesUpdate.zoneShrinkIntervalMinutes !== undefined && { zoneShrinkIntervalMinutes: rulesUpdate.zoneShrinkIntervalMinutes }),
-        ...(rulesUpdate.huntersCanTalk !== undefined && { huntersCanTalk: rulesUpdate.huntersCanTalk }),
-      };
-    }
-
+    room.rules = PresetHandler.validateAndApply(room.rules, rulesUpdate);
     room.updatedAt = new Date().toISOString();
     return room;
   }
@@ -356,7 +336,7 @@ export class RoomManager {
       throw new RoomError("NOT_HOST", "Only the host can configure role settings.");
     }
 
-    if (room.status !== "WAITING") {
+    if (room.status !== "WAITING" && (room.status as string) !== "LOBBY") {
       throw new RoomError("INVALID_STATE", "Cannot configure roles while match is starting or active.");
     }
 
@@ -480,58 +460,34 @@ export class RoomManager {
 
   /**
    * Assigns Hunter and Runner roles to players before starting match if not already assigned.
+   * Uses cryptographically secure Fisher-Yates selection via RoleAssignmentEngine.
    */
   public assignRolesIfPending(roomCode: string): Room {
     const formatted = roomCode.toUpperCase().trim();
     const room = this.rooms.get(formatted);
     if (!room) throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
 
-    const hunterTargetCount = Math.min(
-      Math.max(1, room.roleSettings?.hunterCount || 1),
-      Math.max(1, room.players.length - 1)
-    );
-
     const hasAssignedRoles = room.players.some((p) => p.role === "HUNTER");
     if (!hasAssignedRoles) {
-      const mode = room.roleSettings?.mode || "RANDOM";
-      let hunterIndices: number[] = [];
-
-      if (mode === "HUNTER") {
-        const hostIdx = room.players.findIndex((p) => p.playerId === room.hostPlayerId);
-        hunterIndices.push(hostIdx !== -1 ? hostIdx : 0);
-        let idx = 0;
-        while (hunterIndices.length < hunterTargetCount && idx < room.players.length) {
-          if (!hunterIndices.includes(idx)) hunterIndices.push(idx);
-          idx++;
-        }
-      } else if (mode === "RUNNER") {
-        const nonHostIndices = room.players
-          .map((p, idx) => (p.playerId !== room.hostPlayerId ? idx : -1))
-          .filter((idx) => idx !== -1);
-
-        while (hunterIndices.length < hunterTargetCount && nonHostIndices.length > 0) {
-          const randPos = Math.floor(Math.random() * nonHostIndices.length);
-          hunterIndices.push(nonHostIndices.splice(randPos, 1)[0]);
-        }
-        if (hunterIndices.length === 0) {
-          hunterIndices.push(0);
-        }
-      } else {
-        // RANDOM
-        const indices = room.players.map((_, idx) => idx);
-        for (let i = indices.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [indices[i], indices[j]] = [indices[j], indices[i]];
-        }
-        hunterIndices = indices.slice(0, hunterTargetCount);
-      }
-
-      room.players.forEach((player, idx) => {
-        player.role = hunterIndices.includes(idx) ? "HUNTER" : "RUNNER";
-      });
-      room.updatedAt = new Date().toISOString();
+      RoleAssignmentEngine.assignRandomRoles(room);
     }
 
+    return room;
+  }
+
+  /**
+   * Executes authorized manual role assignment for a room.
+   */
+  public assignManualRoles(
+    roomCode: string,
+    requesterPlayerId: string,
+    hunterPlayerIds: string[]
+  ): Room {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+    if (!room) throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+
+    RoleAssignmentEngine.assignManualRoles(room, requesterPlayerId, hunterPlayerIds);
     return room;
   }
 

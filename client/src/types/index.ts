@@ -160,7 +160,33 @@ export interface HouseRules {
 
 export interface RoleSettings {
   hunterCount: number;
-  mode: "HUNTER" | "RUNNER" | "RANDOM";
+  mode: "HUNTER" | "RUNNER" | "RANDOM" | "MANUAL";
+}
+
+export interface RoleAssignedPayload {
+  matchId?: string;
+  roomCode: string;
+  playerId: string;
+  callsign: string;
+  role: PlayerRole;
+  assignedAt: number;
+}
+
+export interface ManualRoleAssignmentPayload {
+  roomCode: string;
+  requesterPlayerId: string;
+  hunterPlayerIds: string[];
+}
+
+export interface RoomRolesAssignedPayload {
+  roomCode: string;
+  matchId?: string;
+  assignments: Array<{
+    playerId: string;
+    callsign: string;
+    role: PlayerRole;
+  }>;
+  room: Room;
 }
 
 export interface Room {

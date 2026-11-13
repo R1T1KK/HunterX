@@ -152,6 +152,26 @@ function MainGameApp() {
       setIsStarting(false);
     };
 
+    const handleRoleAssigned = (payload: { playerId: string; role: any }) => {
+      console.log(`🎭 [Client Page] Received role:assigned: ${payload.role}`);
+      setCurrentRoom((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          players: prev.players.map((p) =>
+            p.playerId === payload.playerId ? { ...p, role: payload.role } : p
+          ),
+        };
+      });
+    };
+
+    const handleRoomRolesAssigned = (payload: { room: Room }) => {
+      console.log("🎭 [Client Page] Received room:roles-assigned");
+      if (payload.room) {
+        setCurrentRoom(payload.room);
+      }
+    };
+
     socket.on("room:created", handleRoomCreated);
     socket.on("room:joined", handleRoomJoined);
     socket.on("room:player-joined", handlePlayerJoined);
@@ -159,6 +179,8 @@ function MainGameApp() {
     socket.on("room:code-regenerated", handleCodeRegenerated);
     socket.on("room:state-updated", handleStateUpdated);
     socket.on("room:game-started", handleGameStarted);
+    socket.on("role:assigned", handleRoleAssigned);
+    socket.on("room:roles-assigned", handleRoomRolesAssigned);
     socket.on("game:start_countdown", handleGameCountdown);
     socket.on("game:started", handleMatchStarted);
     socket.on("room:error", handleRoomError);
@@ -171,6 +193,8 @@ function MainGameApp() {
       socket.off("room:code-regenerated", handleCodeRegenerated);
       socket.off("room:state-updated", handleStateUpdated);
       socket.off("room:game-started", handleGameStarted);
+      socket.off("role:assigned", handleRoleAssigned);
+      socket.off("room:roles-assigned", handleRoomRolesAssigned);
       socket.off("game:start_countdown", handleGameCountdown);
       socket.off("game:started", handleMatchStarted);
       socket.off("room:error", handleRoomError);
