@@ -29,6 +29,8 @@ export interface LocationUpdatePayload {
   timestamp: number;
 }
 
+export type PlayerRole = "HUNTER" | "RUNNER";
+
 export interface Player {
   playerId: string;
   socketId: string;
@@ -37,6 +39,7 @@ export interface Player {
   isHost: boolean;
   isReady: boolean;
   gpsStatus: GPSStatus;
+  role?: PlayerRole;
   lastLocation?: PlayerLocation;
 }
 

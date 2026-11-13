@@ -9,8 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Phase 2 (Day 7)
-- Day 7: Multi-player marker rendering and linear interpolation (lerp) gliding.
+### Planned for Phase 3 (Days 8–11)
+- Day 8: Authoritative game loop and 30s head-start scatter countdown.
+- Day 9: Role assignment engine and house rule preset handler.
+- Day 10: Server-authoritative spatial math and shrinking geofence polygon.
+- Day 11: Zone boundary alert, out-of-bounds warning, and elimination mechanics.
+
+---
+
+## [0.7.0-day7] - 2026-11-13
+
+### Added
+- **60 FPS Client-Side Linear Interpolation (LERP) Engine (`client/src/lib/MultiplayerLerpEngine.ts`):**
+  - Smooth timestamp-based linear interpolation ($\text{Lerp}(A, B, t) = A + (B - A) \times t$) converting discrete 1-second server ticks into fluid 60 FPS gliding.
+  - Antimeridian ($\pm 180^\circ$) longitude boundary wrapping and angular shortest-path rotation interpolation.
+  - Zero-React-render animation loop updating the Mapbox GeoJSON source directly via `requestAnimationFrame`.
+  - Dynamic tick duration scaling ($800–2500\text{ms}$) with automatic clamping to prevent overshoot.
+  - Stale player garbage collection: drops players inactive for $> 15\text{s}$ to prevent ghost markers.
+- **GeoJSON Multiplayer Symbol & Halo Layers (`client/src/hooks/useMultiplayerMarkers.ts`, `client/src/components/map/mapIcons.ts`):**
+  - Custom vector canvas icons for **Hunters** (Crimson `#FF3B30` target crosshair) and **Runners** (Neon Cyan `#00F0FF` stealth diamond).
+  - High-contrast callsign typography labels with dark `#07090E` halos.
+  - Dynamic directional pointer cone rotating in real-time according to movement bearing (`icon-rotate: ['get', 'heading']`).
+  - Subtle aura pulse halo layers for visual tactical feedback.
+- **Device Orientation Compass Hook (`client/src/hooks/useDeviceCompass.ts`):**
+  - Full mobile compass integration extracting `webkitCompassHeading` on iOS Safari and absolute `alpha` on Android Chrome.
+  - Native iOS 13+ permission request integration (`requestPermission`).
+  - Heading normalization ($0^\circ–360^\circ$) with jitter filtering ($\ge 1.5^\circ$ threshold).
+  - Clear architectural separation between device compass, movement bearing, and map rotation.
+- **Automated Verification & Tests (`scripts/verify-day7.ts`):**
+  - 33-point audit validating scalar lerp, antimeridian wrapping, shortest angular rotation, 60 FPS step motion, role feature properties, and stale player cleanup.
+  - 21/21 backend Vitest tests passing; 47/47 Day 5 and 26/26 Day 6 regression tests passing.
 
 ---
 

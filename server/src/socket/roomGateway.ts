@@ -399,9 +399,14 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         return;
       }
 
+      const room = roomManager.findRoom(payload.roomCode);
+      const player = room?.players.find((p) => p.playerId === payload.playerId);
+
       // Broadcast location update to the room members
       socket.to(payload.roomCode).emit("location:player-updated", {
         playerId: payload.playerId,
+        callsign: player?.callsign,
+        role: player?.role || "RUNNER",
         location: result.location,
       });
 

@@ -5,6 +5,8 @@ import mapboxgl from "mapbox-gl";
 import { getMapboxToken, isMapboxTokenValid, MAP_CONFIG, FALLBACK_TACTICAL_STYLE } from "./mapConfig";
 import { FloatingMapControls } from "./FloatingMapControls";
 import { createGeoJsonCircle } from "@/lib/geoUtils";
+import { useMultiplayerMarkers } from "@/hooks/useMultiplayerMarkers";
+import { Room } from "@/types";
 import { AlertTriangle, KeyRound, Radio } from "lucide-react";
 
 interface FullBleedMapProps {
@@ -14,6 +16,9 @@ interface FullBleedMapProps {
   userCoordinates?: [number, number] | null;
   accuracy?: number | null;
   heading?: number | null;
+  compassHeading?: number | null;
+  room?: Room | null;
+  currentPlayerId?: string;
   className?: string;
   children?: React.ReactNode;
 }
@@ -25,6 +30,9 @@ export function FullBleedMap({
   userCoordinates,
   accuracy,
   heading,
+  compassHeading,
+  room,
+  currentPlayerId,
   className = "",
   children,
 }: FullBleedMapProps) {
@@ -257,16 +265,30 @@ export function FullBleedMap({
       userMarkerRef.current.setLngLat(userCoordinates);
     }
 
-    // Update heading rotation if available
+    // Update heading rotation if available (compass heading preferred over GPS bearing)
+    const effectiveHeading =
+      typeof compassHeading === "number" && !isNaN(compassHeading)
+        ? compassHeading
+        : typeof heading === "number" && !isNaN(heading)
+        ? heading
+        : null;
+
     if (markerHeadingRef.current) {
-      if (heading !== null && heading !== undefined) {
+      if (effectiveHeading !== null) {
         markerHeadingRef.current.style.display = "block";
-        markerHeadingRef.current.style.transform = `rotate(${heading}deg)`;
+        markerHeadingRef.current.style.transform = `rotate(${effectiveHeading}deg)`;
       } else {
         markerHeadingRef.current.style.display = "none";
       }
     }
-  }, [map, userCoordinates, accuracy, heading]);
+  }, [map, userCoordinates, accuracy, heading, compassHeading]);
+
+  // 60 FPS Multiplayer Marker Rendering with Linear Interpolation (Day 7)
+  useMultiplayerMarkers({
+    map,
+    room,
+    currentPlayerId,
+  });
 
   return (
     <main

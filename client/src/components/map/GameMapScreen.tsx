@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FullBleedMap } from "./FullBleedMap";
 import { Room, GPSSignalQuality } from "@/types";
 import { GPSQualityBadge } from "@/components/ui/GPSQualityBadge";
+import { useDeviceCompass } from "@/hooks/useDeviceCompass";
 import { ArrowLeft, Shield, Users } from "lucide-react";
 
 interface GameMapScreenProps {
@@ -33,14 +34,18 @@ export function GameMapScreen({
   const roomCode = room?.roomCode || "PREVIEW";
   const status = room?.status || "IN_PROGRESS";
   const playerCount = room?.players.length || 1;
+  const { heading: compassHeading } = useDeviceCompass();
 
   return (
     <div className="fixed inset-0 w-[100vw] h-[100dvh] overflow-hidden bg-game-black select-none">
-      {/* 1. Layer 0: Full-Bleed Mapbox Canvas with Dynamic Accuracy Circle */}
+      {/* 1. Layer 0: Full-Bleed Mapbox Canvas with Dynamic Accuracy Circle & 60 FPS Multiplayer LERP */}
       <FullBleedMap
         userCoordinates={userCoordinates}
         accuracy={accuracy}
         heading={heading}
+        compassHeading={compassHeading}
+        room={room}
+        currentPlayerId={currentPlayerId}
       >
         {/* 2. Layer 1: Floating Tactical Top HUD */}
         <header className="fixed top-0 left-0 right-0 z-20 safe-top safe-px pt-2 pb-1 pointer-events-none space-y-1.5">

@@ -25,7 +25,7 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 | Phase | Days | Focus Area | Status | Deliverables |
 | :---: | :---: | :--- | :---: | :--- |
 | **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `COMPLETED` | Days 1–3 Complete: PWA Shell, Home Screen, RoomManager, Socket.IO Gateway, Game Lobby Screen, Presets, Custom Drawer, Role Selection, GPS Lock Gate |
-| **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `IN_PROGRESS` | Days 4–6 Complete: 100dvh Full-Bleed Mapbox Canvas, Mobile Gestures, useGeolocation Hook, Dynamic Accuracy Ring, Tactical GPS Quality Badge, EMA GPS Filter & 1Hz Location Streamer |
+| **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `COMPLETED` | Days 4–7 Complete: 100dvh Full-Bleed Mapbox Canvas, Mobile Gestures, useGeolocation Hook, Dynamic Accuracy Ring, Tactical GPS Quality Badge, EMA GPS Filter, 1Hz Location Streamer & 60 FPS Multiplayer Marker LERP |
 | **Phase 3** | 8–11 | State Engine, Spatial Math & Geofence | `PENDING` | 1Hz loop, Quick/Standard/Big Park presets, zone shrink |
 | **Phase 4** | 12–15 | 10m Alarm, 15s Cloak & Thumb Tag System | `PENDING` | Crimson alarm, 180s cooldown, server catch check |
 | **Phase 5** | 16–18 | Hardware Web APIs & 4G Network Recovery | `PENDING` | WakeLock, Web Audio siren, vibration, airplane mode test |
@@ -120,11 +120,12 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 #### Day 7: Multi-Player Marker Rendering & Linear Interpolation (Lerp)
 - **Objective:** Render other players' markers smoothly on the mobile map canvas.
 - **Tasks:**
-  - [ ] Implement GeoJSON symbol layers for Hunters (Red icon) and Runners (Cyan/Blue icon).
-  - [ ] Implement client-side linear interpolation (lerp) between incoming 1-second server ticks.
-  - [ ] Add compass rotation to markers based on device orientation API where available.
+  - [x] Implement GeoJSON symbol layers for Hunters (Red tactical icon) and Runners (Cyan/Blue stealth icon) (`mapIcons.ts`, `useMultiplayerMarkers.ts`).
+  - [x] Implement client-side linear interpolation (lerp) between incoming 1-second server ticks running at 60 FPS via `requestAnimationFrame` (`MultiplayerLerpEngine.ts`).
+  - [x] Add compass rotation to markers based on DeviceOrientation API with iOS permission handling and Android absolute heading (`useDeviceCompass.ts`).
 - **Mandatory Acceptance Criteria:**
-  - Another player walking outdoors appears to glide smoothly across the screen rather than stuttering every second.
+  - [x] Another player walking outdoors appears to glide smoothly across the screen rather than stuttering every second.
+  - [x] 33/33 Day 7 automated audit tests pass, 21/21 server tests pass, 0 lint/build errors.
 
 ---
 

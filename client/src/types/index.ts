@@ -61,6 +61,26 @@ export interface LocationUpdatePayload {
   timestamp: number;
 }
 
+export type PlayerRole = "HUNTER" | "RUNNER";
+
+export interface RemotePlayerState {
+  playerId: string;
+  callsign: string;
+  role: PlayerRole;
+  currentLng: number;
+  currentLat: number;
+  targetLng: number;
+  targetLat: number;
+  previousLng: number;
+  previousLat: number;
+  currentHeading: number;
+  targetHeading: number;
+  previousHeading: number;
+  startTime: number;
+  durationMs: number;
+  lastUpdated: number;
+}
+
 export interface Player {
   playerId: string;
   socketId: string;
@@ -69,6 +89,7 @@ export interface Player {
   isHost: boolean;
   isReady: boolean;
   gpsStatus: GPSStatus;
+  role?: PlayerRole;
   lastLocation?: PlayerLocation;
 }
 

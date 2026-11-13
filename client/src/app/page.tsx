@@ -291,10 +291,12 @@ function MainGameApp() {
     );
   }
 
-  // Map Canvas Preview (Day 4 & Day 5 & Day 6 Exploration)
+  // Map Canvas Preview (Day 4 & Day 5 & Day 6 & Day 7 Exploration)
   if (isPreviewingMap) {
     return (
       <GameMapScreen
+        room={currentRoom}
+        currentPlayerId={playerId}
         onLeaveGame={() => setIsPreviewingMap(false)}
         userCoordinates={activeDisplayCoords ? [activeDisplayCoords.lng, activeDisplayCoords.lat] : null}
         accuracy={activeDisplayCoords?.accuracy}

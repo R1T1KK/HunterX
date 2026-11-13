@@ -51,3 +51,56 @@ export function calculateBearing(
 
   return (bearing + 360) % 360;
 }
+
+/**
+ * Standard linear interpolation (LERP) between scalar A and B.
+ */
+export function lerp(a: number, b: number, t: number): number {
+  const clampedT = Math.max(0, Math.min(1, t));
+  return a + (b - a) * clampedT;
+}
+
+/**
+ * Longitude linear interpolation with antimeridian (+/-180 degree) wrapping.
+ */
+export function lerpLongitude(lngA: number, lngB: number, t: number): number {
+  const clampedT = Math.max(0, Math.min(1, t));
+  if (clampedT === 0) return lngA;
+  if (clampedT === 1) return lngB;
+
+  const delta = ((lngB - lngA + 540) % 360) - 180;
+  if (delta === 0) return lngA;
+
+  const result = lngA + delta * clampedT;
+  return ((result + 540) % 360) - 180;
+}
+
+/**
+ * Angular linear interpolation along the shortest rotation path (0 - 360 degrees).
+ */
+export function lerpAngle(angleA: number, angleB: number, t: number): number {
+  const clampedT = Math.max(0, Math.min(1, t));
+  if (clampedT === 0) return angleA;
+  if (clampedT === 1) return angleB;
+
+  const diff = ((angleB - angleA + 540) % 360) - 180;
+  if (diff === 0) return angleA;
+
+  return (angleA + diff * clampedT + 360) % 360;
+}
+
+/**
+ * 2D geospatial coordinate interpolation between [lngA, latA] and [lngB, latB].
+ */
+export function lerpCoordinates(
+  coordA: [number, number],
+  coordB: [number, number],
+  t: number
+): [number, number] {
+  return [
+    lerpLongitude(coordA[0], coordB[0], t),
+    lerp(coordA[1], coordB[1], t),
+  ];
+}
+
+
