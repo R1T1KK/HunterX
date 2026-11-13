@@ -198,12 +198,9 @@ export class RoomManager {
       throw new RoomError("ROOM_NOT_FOUND", `Room with code '${validated.roomCode}' does not exist.`);
     }
 
-    if (room.status !== "WAITING") {
-      throw new RoomError("GAME_IN_PROGRESS", "This room has already started or completed.");
-    }
-
     const existingPlayerIndex = room.players.findIndex((p) => p.playerId === validated.playerId);
     if (existingPlayerIndex !== -1) {
+      // Reconnecting player: update socket and allow reconnect in ANY game state (LOBBY, COUNTDOWN, IN_PROGRESS)
       const oldSocketId = room.players[existingPlayerIndex].socketId;
       this.socketToRoom.delete(oldSocketId);
 
@@ -213,6 +210,10 @@ export class RoomManager {
 
       this.socketToRoom.set(validated.socketId, validated.roomCode);
       return room;
+    }
+
+    if (room.status !== "WAITING" && (room.status as string) !== "LOBBY") {
+      throw new RoomError("GAME_IN_PROGRESS", "This room has already started or completed.");
     }
 
     if (room.players.length >= room.maxPlayers) {
@@ -455,7 +456,7 @@ export class RoomManager {
       return { canStart: false, reason: "Only the room host can start the game.", lockedGpsCount: 0 };
     }
 
-    if (room.status !== "WAITING") {
+    if (room.status !== "WAITING" && (room.status as string) !== "LOBBY") {
       return { canStart: false, reason: "Game is already starting or in progress.", lockedGpsCount: 0 };
     }
 
@@ -478,7 +479,64 @@ export class RoomManager {
   }
 
   /**
-   * Transitions room to STARTING if all start criteria are met.
+   * Assigns Hunter and Runner roles to players before starting match if not already assigned.
+   */
+  public assignRolesIfPending(roomCode: string): Room {
+    const formatted = roomCode.toUpperCase().trim();
+    const room = this.rooms.get(formatted);
+    if (!room) throw new RoomError("ROOM_NOT_FOUND", "Room not found.");
+
+    const hunterTargetCount = Math.min(
+      Math.max(1, room.roleSettings?.hunterCount || 1),
+      Math.max(1, room.players.length - 1)
+    );
+
+    const hasAssignedRoles = room.players.some((p) => p.role === "HUNTER");
+    if (!hasAssignedRoles) {
+      const mode = room.roleSettings?.mode || "RANDOM";
+      let hunterIndices: number[] = [];
+
+      if (mode === "HUNTER") {
+        const hostIdx = room.players.findIndex((p) => p.playerId === room.hostPlayerId);
+        hunterIndices.push(hostIdx !== -1 ? hostIdx : 0);
+        let idx = 0;
+        while (hunterIndices.length < hunterTargetCount && idx < room.players.length) {
+          if (!hunterIndices.includes(idx)) hunterIndices.push(idx);
+          idx++;
+        }
+      } else if (mode === "RUNNER") {
+        const nonHostIndices = room.players
+          .map((p, idx) => (p.playerId !== room.hostPlayerId ? idx : -1))
+          .filter((idx) => idx !== -1);
+
+        while (hunterIndices.length < hunterTargetCount && nonHostIndices.length > 0) {
+          const randPos = Math.floor(Math.random() * nonHostIndices.length);
+          hunterIndices.push(nonHostIndices.splice(randPos, 1)[0]);
+        }
+        if (hunterIndices.length === 0) {
+          hunterIndices.push(0);
+        }
+      } else {
+        // RANDOM
+        const indices = room.players.map((_, idx) => idx);
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        hunterIndices = indices.slice(0, hunterTargetCount);
+      }
+
+      room.players.forEach((player, idx) => {
+        player.role = hunterIndices.includes(idx) ? "HUNTER" : "RUNNER";
+      });
+      room.updatedAt = new Date().toISOString();
+    }
+
+    return room;
+  }
+
+  /**
+   * Transitions room to COUNTDOWN if all start criteria are met.
    */
   public startGame(roomCode: string, requesterPlayerId: string): Room {
     const check = this.canStartGame(roomCode, requesterPlayerId);
@@ -489,7 +547,8 @@ export class RoomManager {
     const formatted = roomCode.toUpperCase().trim();
     const room = this.rooms.get(formatted)!;
 
-    room.status = "STARTING";
+    this.assignRolesIfPending(formatted);
+    room.status = "COUNTDOWN";
     room.updatedAt = new Date().toISOString();
     return room;
   }
@@ -585,6 +644,10 @@ export class RoomManager {
     this.rooms.clear();
     this.socketToRoom.clear();
     this.playerToRoom.clear();
+  }
+
+  public resetAll(): void {
+    this.clearAll();
   }
 }
 

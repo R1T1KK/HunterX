@@ -9,11 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Phase 3 (Days 8–11)
-- Day 8: Authoritative game loop and 30s head-start scatter countdown.
+### Planned for Phase 3 (Days 9–11)
 - Day 9: Role assignment engine and house rule preset handler.
 - Day 10: Server-authoritative spatial math and shrinking geofence polygon.
 - Day 11: Zone boundary alert, out-of-bounds warning, and elimination mechanics.
+
+---
+
+## [0.8.0-day8] - 2026-11-13
+
+### Added
+- **Server-Authoritative Game Loop & State Machine (`server/src/services/GameManager.ts`):**
+  - Robust 4-state lifecycle machine: `LOBBY` $\rightarrow$ `COUNTDOWN` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `COMPLETED`.
+  - Authoritative 1Hz game clock loop computing remaining seconds down to zero without client timer drift.
+  - Automatic cryptographic role assignment (Hunter vs. Runner) on game start.
+  - Reconnect synchronization (`game:sync` and `game:synced`) sending authoritative timestamp snapshots to rejoining players.
+  - Prevents invalid transitions, duplicate starts, and multiple timer intervals.
+- **30-Second Head-Start Scatter Phase (`client/src/components/game/HeadStartScatterOverlay.tsx`):**
+  - **Runner Experience:** Prominent floating green `"SCATTER!"` banner with live digital countdown (`00:30` ... `00:00`) and emerald pulse styling; map remains completely visible and interactive for sprint navigation.
+  - **Hunter Experience:** Full-screen frosted dark locked map overlay with tactical radar lock icon, `"HEAD START IN PROGRESS (30s)"` headline, and encrypted satellite feed notice blocking all map interactions.
+  - **Instant Map Unlock:** At 00:00, Hunter map unlocks immediately with haptic vibration alerts and tactical flash banner across all connected devices.
+- **Strict Backend GPS Privacy Guard (`server/src/socket/roomGateway.ts`):**
+  - Server-authoritatively blocks Runner GPS coordinates from reaching Hunter network packets during the 30-second scatter countdown.
+  - Runners receive peer runner updates; Hunters receive restricted packets until 00:00 map unlock.
+- **Automated Verification & Test Suites (`scripts/verify-day8.ts`, `server/src/__tests__/gameManager.test.ts`):**
+  - 25/25 automated Day 8 acceptance checks passed.
+  - 26/26 backend Vitest tests passed with 0 failures.
+  - 100% regression pass across Day 5 (47/47), Day 6 (26/26), and Day 7 (33/33).
+  - Production Next.js build passes with 0 lint and 0 TypeScript errors.
 
 ---
 

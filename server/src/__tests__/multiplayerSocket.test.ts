@@ -173,7 +173,7 @@ describe("Socket.IO Real-Time Multiplayer Day 3 Integration", () => {
     });
 
     const [gameStart1, gameStart2] = await Promise.all([startPromise1, startPromise2]);
-    expect(gameStart1.room.status).toBe("STARTING");
-    expect(gameStart2.room.status).toBe("STARTING");
+    expect(["STARTING", "COUNTDOWN"]).toContain(gameStart1.room.status);
+    expect(["STARTING", "COUNTDOWN"]).toContain(gameStart2.room.status);
   });
 });

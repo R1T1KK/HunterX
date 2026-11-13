@@ -220,8 +220,10 @@ describe("RoomManager Core Unit Tests", () => {
     // Non-host cannot start game
     expect(manager.canStartGame(room.roomCode, "player-2").canStart).toBe(false);
 
-    // Starting game transitions status
+    // Starting game transitions status to COUNTDOWN (or STARTING) and assigns roles
     const started = manager.startGame(room.roomCode, "host-1");
-    expect(started.status).toBe("STARTING");
+    expect(["STARTING", "COUNTDOWN"]).toContain(started.status);
+    expect(started.players.some((p) => p.role === "HUNTER")).toBe(true);
+    expect(started.players.some((p) => p.role === "RUNNER")).toBe(true);
   });
 });

@@ -93,7 +93,56 @@ export interface Player {
   lastLocation?: PlayerLocation;
 }
 
-export type RoomStatus = "WAITING" | "STARTING" | "IN_PROGRESS" | "COMPLETED";
+export type GameState = "LOBBY" | "COUNTDOWN" | "IN_PROGRESS" | "COMPLETED";
+
+export type RoomStatus =
+  | "WAITING"
+  | "LOBBY"
+  | "STARTING"
+  | "COUNTDOWN"
+  | "IN_PROGRESS"
+  | "COMPLETED";
+
+export interface MatchClockPayload {
+  matchId: string;
+  gameState: GameState;
+  phase: "HEAD_START" | "MATCH" | "ENDED";
+  remainingSeconds: number;
+  headStartEndsAt?: number;
+  matchEndsAt?: number;
+  serverTimestamp: number;
+}
+
+export interface GameCountdownPayload {
+  matchId: string;
+  gameState: "COUNTDOWN";
+  startedAt: number;
+  headStartEndsAt: number;
+  headStartDurationSeconds: number;
+  remainingSeconds: number;
+  serverTimestamp: number;
+  room: Room;
+}
+
+export interface GameStartedPayload {
+  matchId: string;
+  gameState: "IN_PROGRESS";
+  startedAt: number;
+  matchEndsAt: number;
+  roundDurationSeconds: number;
+  remainingSeconds: number;
+  serverTimestamp: number;
+  room: Room;
+}
+
+export interface GameEndedPayload {
+  matchId: string;
+  gameState: "COMPLETED";
+  winner: "RUNNERS" | "HUNTERS";
+  reason: string;
+  serverTimestamp: number;
+  room: Room;
+}
 
 export type RulesPreset = "QUICK" | "STANDARD" | "BIG_PARK" | "CUSTOM";
 

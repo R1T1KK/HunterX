@@ -26,7 +26,7 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 | :---: | :---: | :--- | :---: | :--- |
 | **Phase 1** | 1–3 | PWA Shell, Home Screen & Lobby with Presets | `COMPLETED` | Days 1–3 Complete: PWA Shell, Home Screen, RoomManager, Socket.IO Gateway, Game Lobby Screen, Presets, Custom Drawer, Role Selection, GPS Lock Gate |
 | **Phase 2** | 4–7 | Full-Bleed Mapbox Viewport & GPS Stream | `COMPLETED` | Days 4–7 Complete: 100dvh Full-Bleed Mapbox Canvas, Mobile Gestures, useGeolocation Hook, Dynamic Accuracy Ring, Tactical GPS Quality Badge, EMA GPS Filter, 1Hz Location Streamer & 60 FPS Multiplayer Marker LERP |
-| **Phase 3** | 8–11 | State Engine, Spatial Math & Geofence | `PENDING` | 1Hz loop, Quick/Standard/Big Park presets, zone shrink |
+| **Phase 3** | 8–11 | State Engine, Spatial Math & Geofence | `IN_PROGRESS` | Day 8 Complete: Authoritative Game Loop, 30s Head-Start Scatter Countdown, Server State Machine (LOBBY->COUNTDOWN->IN_PROGRESS->COMPLETED), Backend GPS Privacy Guard, 1Hz Game Clock & Reconnect Sync |
 | **Phase 4** | 12–15 | 10m Alarm, 15s Cloak & Thumb Tag System | `PENDING` | Crimson alarm, 180s cooldown, server catch check |
 | **Phase 5** | 16–18 | Hardware Web APIs & 4G Network Recovery | `PENDING` | WakeLock, Web Audio siren, vibration, airplane mode test |
 | **Phase 6** | 19–20 | Outdoor Park Field Test & Cloud Release | `PENDING` | 3-phone outdoor test, Vercel/Render SSL, v1.0.0 |
@@ -134,13 +134,15 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 #### Day 8: Authoritative Game Loop & Head-Start Scatter Countdown
 - **Objective:** Build backend match lifecycle with head-start scatter countdown.
 - **Tasks:**
-  - [ ] Implement state machine: `LOBBY` $\rightarrow$ `COUNTDOWN` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `COMPLETED`.
-  - [ ] Implement 30s Head-Start Scatter Phase:
-    - Runners see pulsing green *"SCATTER!"* countdown.
-    - Hunters see locked map overlay: *"HEAD START IN PROGRESS (30s)"*.
-  - [ ] Broadcast synchronized game clock every second.
+  - [x] Implement state machine: `LOBBY` $\rightarrow$ `COUNTDOWN` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `COMPLETED` (`server/src/services/GameManager.ts`).
+  - [x] Implement 30s Head-Start Scatter Phase:
+    - Runners see pulsing green *"SCATTER!"* countdown (`HeadStartScatterOverlay.tsx`).
+    - Hunters see locked map overlay: *"HEAD START IN PROGRESS (30s)"* with encrypted satellite feed banner.
+    - Server-authoritatively blocks Runner GPS coordinates from reaching Hunter network packets during countdown.
+  - [x] Broadcast synchronized server game clock tick (`game:timer_tick`) every second and handle reconnect sync (`game:sync`).
 - **Mandatory Acceptance Criteria:**
-  - When timer reaches 00:00, Hunter map unlocks instantly and the main match begins on all mobile devices.
+  - [x] When timer reaches 00:00, Hunter map unlocks instantly and the main match begins on all mobile devices with haptic alert.
+  - [x] 25/25 Day 8 automated audit tests pass, 26/26 server tests pass, 0 lint/build errors.
 
 #### Day 9: Role Assignment Engine & Preset Handler
 - **Objective:** Server-authoritative role distribution and house rules enforcement.

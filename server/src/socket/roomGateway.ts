@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { roomManager, RoomError } from "../services/RoomManager.js";
 import { locationManager } from "../services/LocationManager.js";
+import { gameManager } from "../services/GameManager.js";
 import { GPSStatus, HouseRules, RoleSettings, RulesPreset, LocationUpdatePayload } from "../types/index.js";
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
@@ -104,6 +105,10 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         socket.leave(payload.roomCode);
 
         console.log(`👋 [Room] Player ${payload.playerId} left ${payload.roomCode}`);
+
+        if (result.isEmpty) {
+          gameManager.stopMatch(payload.roomCode);
+        }
 
         if (result.room) {
           io.to(payload.roomCode).emit("room:player-left", {
@@ -343,47 +348,93 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     }
   );
 
-  // 9. Host starts game (enforces MANDATORY 2 confirmed GPS locks)
+  // 9. Host starts game (Authoritative Game State Machine: LOBBY -> COUNTDOWN -> IN_PROGRESS)
+  const handleStartGame = (
+    payload: { roomCode: string; requesterPlayerId: string },
+    callback?: (response: { success: boolean; data?: unknown; error?: unknown }) => void
+  ) => {
+    try {
+      const { session, room } = gameManager.startMatch(
+        io,
+        payload.roomCode,
+        payload.requesterPlayerId
+      );
+
+      console.log(`🚀 [Room] Game STARTED for ${payload.roomCode} in COUNTDOWN phase (30s Head-Start)!`);
+
+      if (typeof callback === "function") {
+        callback({ success: true, data: { room, session } });
+      }
+    } catch (err: unknown) {
+      const error =
+        err instanceof RoomError
+          ? { code: err.code, message: err.message }
+          : { code: "CANNOT_START_GAME", message: (err as Error).message };
+
+      console.error(`❌ [Room] Start game rejected:`, error);
+      socket.emit("room:error", error);
+
+      if (typeof callback === "function") {
+        callback({ success: false, error });
+      }
+    }
+  };
+
+  socket.on("room:start-game", handleStartGame);
+  socket.on("game:start", handleStartGame);
+
+  // 9.1 Player requests authoritative game clock sync (e.g. reconnect or page reload)
   socket.on(
-    "room:start-game",
+    "game:sync",
     (
-      payload: { roomCode: string; requesterPlayerId: string },
+      payload: { roomCode: string },
+      callback?: (response: { success: boolean; data?: unknown; error?: unknown }) => void
+    ) => {
+      const sync = gameManager.getSyncPayload(payload.roomCode);
+      const room = roomManager.findRoom(payload.roomCode);
+
+      const response = {
+        success: Boolean(room),
+        data: {
+          sync,
+          room,
+        },
+      };
+
+      socket.emit("game:synced", response.data);
+      if (typeof callback === "function") {
+        callback(response);
+      }
+    }
+  );
+
+  // 9.2 Host ends match prematurely
+  socket.on(
+    "game:end",
+    (
+      payload: { roomCode: string; reason?: string; winner?: "RUNNERS" | "HUNTERS" },
       callback?: (response: { success: boolean; data?: unknown; error?: unknown }) => void
     ) => {
       try {
-        const updatedRoom = roomManager.startGame(
+        const ended = gameManager.endMatch(
+          io,
           payload.roomCode,
-          payload.requesterPlayerId
+          payload.reason || "HOST_ABORTED",
+          payload.winner || "RUNNERS"
         );
-
-        console.log(`🚀 [Room] Game STARTED for ${payload.roomCode}!`);
-
-        io.to(payload.roomCode).emit("room:game-started", {
-          room: updatedRoom,
-        });
-
-        io.to(payload.roomCode).emit("room:state-updated", { room: updatedRoom });
-
         if (typeof callback === "function") {
-          callback({ success: true, data: { room: updatedRoom } });
+          callback({ success: true, data: ended });
         }
       } catch (err: unknown) {
-        const error =
-          err instanceof RoomError
-            ? { code: err.code, message: err.message }
-            : { code: "CANNOT_START_GAME", message: (err as Error).message };
-
-        console.error(`❌ [Room] Start game rejected:`, error);
-        socket.emit("room:error", error);
-
         if (typeof callback === "function") {
-          callback({ success: false, error });
+          callback({ success: false, error: (err as Error).message });
         }
       }
     }
   );
 
   // 10. Player streams validated location update (Max 1 Hz)
+  // MANDATORY SECURITY RULE: During Head-Start COUNTDOWN phase, Hunters MUST NOT receive Runner coordinates!
   socket.on(
     "location:update",
     (
@@ -401,14 +452,44 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
       const room = roomManager.findRoom(payload.roomCode);
       const player = room?.players.find((p) => p.playerId === payload.playerId);
+      const senderRole = player?.role || "RUNNER";
 
-      // Broadcast location update to the room members
-      socket.to(payload.roomCode).emit("location:player-updated", {
-        playerId: payload.playerId,
-        callsign: player?.callsign,
-        role: player?.role || "RUNNER",
-        location: result.location,
-      });
+      if (room && room.status === "COUNTDOWN") {
+        // ENFORCE BACKEND RESTRICTION:
+        // If sender is RUNNER, broadcast ONLY to other RUNNERS. Hunters get ZERO runner packets!
+        if (senderRole === "RUNNER") {
+          for (const recipient of room.players) {
+            if (recipient.playerId !== payload.playerId && recipient.role === "RUNNER") {
+              io.to(recipient.socketId).emit("location:player-updated", {
+                playerId: payload.playerId,
+                callsign: player?.callsign,
+                role: "RUNNER",
+                location: result.location,
+              });
+            }
+          }
+        } else {
+          // If sender is HUNTER, broadcast ONLY to fellow HUNTERS
+          for (const recipient of room.players) {
+            if (recipient.playerId !== payload.playerId && recipient.role === "HUNTER") {
+              io.to(recipient.socketId).emit("location:player-updated", {
+                playerId: payload.playerId,
+                callsign: player?.callsign,
+                role: "HUNTER",
+                location: result.location,
+              });
+            }
+          }
+        }
+      } else {
+        // Normal broadcast to all room peers during IN_PROGRESS or WAITING
+        socket.to(payload.roomCode).emit("location:player-updated", {
+          playerId: payload.playerId,
+          callsign: player?.callsign,
+          role: senderRole,
+          location: result.location,
+        });
+      }
 
       if (typeof callback === "function") {
         callback({ success: true, data: { location: result.location } });

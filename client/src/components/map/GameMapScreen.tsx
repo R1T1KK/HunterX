@@ -2,10 +2,12 @@
 
 import React, { useState } from "react";
 import { FullBleedMap } from "./FullBleedMap";
-import { Room, GPSSignalQuality } from "@/types";
+import { Room, GPSSignalQuality, PlayerRole } from "@/types";
 import { GPSQualityBadge } from "@/components/ui/GPSQualityBadge";
 import { useDeviceCompass } from "@/hooks/useDeviceCompass";
-import { ArrowLeft, Shield, Users } from "lucide-react";
+import { useGameTimer } from "@/hooks/useGameTimer";
+import { HeadStartScatterOverlay } from "@/components/game/HeadStartScatterOverlay";
+import { ArrowLeft, Shield, Users, Clock } from "lucide-react";
 
 interface GameMapScreenProps {
   room?: Room | null;
@@ -35,6 +37,11 @@ export function GameMapScreen({
   const status = room?.status || "IN_PROGRESS";
   const playerCount = room?.players.length || 1;
   const { heading: compassHeading } = useDeviceCompass();
+  const timerState = useGameTimer(room, currentPlayerId);
+
+  // Derive authoritative player role
+  const currentPlayer = room?.players.find((p) => p.playerId === currentPlayerId);
+  const playerRole: PlayerRole = currentPlayer?.role || (isHost ? "HUNTER" : "RUNNER");
 
   return (
     <div className="fixed inset-0 w-[100vw] h-[100dvh] overflow-hidden bg-game-black select-none">
@@ -47,7 +54,17 @@ export function GameMapScreen({
         room={room}
         currentPlayerId={currentPlayerId}
       >
-        {/* 2. Layer 1: Floating Tactical Top HUD */}
+        {/* 2. Layer 1: 30-Second Head-Start Scatter Overlay (Green Pulsing for Runner, Locked Frosted for Hunter) */}
+        <HeadStartScatterOverlay
+          role={playerRole}
+          gameState={timerState.gameState}
+          remainingSeconds={timerState.remainingSeconds}
+          formattedTime={timerState.formattedTime}
+          headStartTotalSeconds={room?.rules?.headStartSeconds || 30}
+          justUnlocked={timerState.justUnlocked}
+        />
+
+        {/* 3. Layer 2: Floating Tactical Top HUD */}
         <header className="fixed top-0 left-0 right-0 z-20 safe-top safe-px pt-2 pb-1 pointer-events-none space-y-1.5">
           <div className="max-w-md mx-auto flex items-center justify-between pointer-events-auto">
             {/* Exit Match Action */}
@@ -60,14 +77,24 @@ export function GameMapScreen({
               <span>Exit</span>
             </button>
 
-            {/* Room Code & Status Pill */}
+            {/* Room Code & Authoritative Clock Pill */}
             <div className="px-3.5 py-1.5 rounded-2xl bg-game-charcoal/90 border border-game-border/80 flex items-center gap-2 shadow-lg backdrop-blur-md">
               <span className="text-xs font-black tracking-widest text-white font-gaming">
                 {roomCode}
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-black text-game-amber uppercase">
-                {status}
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  timerState.phase === "HEAD_START"
+                    ? "bg-emerald-400 animate-ping"
+                    : "bg-emerald-400 animate-pulse"
+                }`}
+              />
+              <span className="text-[10px] font-black text-game-amber uppercase font-mono">
+                {timerState.gameState === "COUNTDOWN"
+                  ? `SCATTER • ${timerState.formattedTime}`
+                  : timerState.gameState === "IN_PROGRESS"
+                  ? `MATCH • ${timerState.formattedTime}`
+                  : status}
               </span>
             </div>
 

@@ -140,6 +140,18 @@ function MainGameApp() {
       setIsStarting(false);
     };
 
+    const handleGameCountdown = (payload: { room: Room }) => {
+      console.log("⏱️ [Client Page] Received game:start_countdown", payload);
+      setCurrentRoom(payload.room);
+      setIsStarting(false);
+    };
+
+    const handleMatchStarted = (payload: { room: Room }) => {
+      console.log("🔓 [Client Page] Received game:started", payload);
+      setCurrentRoom(payload.room);
+      setIsStarting(false);
+    };
+
     socket.on("room:created", handleRoomCreated);
     socket.on("room:joined", handleRoomJoined);
     socket.on("room:player-joined", handlePlayerJoined);
@@ -147,6 +159,8 @@ function MainGameApp() {
     socket.on("room:code-regenerated", handleCodeRegenerated);
     socket.on("room:state-updated", handleStateUpdated);
     socket.on("room:game-started", handleGameStarted);
+    socket.on("game:start_countdown", handleGameCountdown);
+    socket.on("game:started", handleMatchStarted);
     socket.on("room:error", handleRoomError);
 
     return () => {
@@ -157,6 +171,8 @@ function MainGameApp() {
       socket.off("room:code-regenerated", handleCodeRegenerated);
       socket.off("room:state-updated", handleStateUpdated);
       socket.off("room:game-started", handleGameStarted);
+      socket.off("game:start_countdown", handleGameCountdown);
+      socket.off("game:started", handleMatchStarted);
       socket.off("room:error", handleRoomError);
     };
   }, []);
@@ -309,7 +325,11 @@ function MainGameApp() {
 
   // Active Room -> Match Running (Screen 3: GameMapScreen) or Lobby (Screen 2: GameLobbyScreen)
   if (currentRoom) {
-    if (currentRoom.status === "STARTING" || currentRoom.status === "IN_PROGRESS") {
+    if (
+      currentRoom.status === "COUNTDOWN" ||
+      currentRoom.status === "STARTING" ||
+      currentRoom.status === "IN_PROGRESS"
+    ) {
       return (
         <GameMapScreen
           room={currentRoom}
