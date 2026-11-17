@@ -163,3 +163,35 @@ export interface SocketErrorPayload {
   code: string;
   message: string;
 }
+
+// Spatial Distance Engine Types (Day 10)
+export interface PairwiseDistance {
+  hunterId: string;
+  hunterCallsign: string;
+  runnerId: string;
+  runnerCallsign: string;
+  distanceMeters: number;
+  isProximityAlarm: boolean; // <= 10.0m (Day 12 readiness)
+  isCatchable: boolean;      // <= 5.0m  (Day 15 readiness)
+  calculatedAt: number;
+}
+
+export interface NearestOpponentResult {
+  opponentId: string;
+  callsign: string;
+  distanceMeters: number;
+  role: PlayerRole;
+}
+
+export interface DistanceMatrixResult {
+  roomCode: string;
+  calculatedAt: number;
+  calculationDurationMs: number;
+  totalActivePlayers: number;
+  activeHuntersCount: number;
+  activeRunnersCount: number;
+  excludedPlayersCount: number;
+  distances: PairwiseDistance[];
+  matrix: Record<string, Record<string, number>>;
+  nearestOpponents: Record<string, NearestOpponentResult | null>;
+}

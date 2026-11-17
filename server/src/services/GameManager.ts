@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { roomManager } from "./RoomManager.js";
 import { RoleAssignmentEngine } from "./RoleAssignmentEngine.js";
+import { geoService } from "./GeoService.js";
 import {
   GameState,
   MatchClockPayload,
@@ -128,10 +129,12 @@ export class GameManager {
       `⏱️ [GameManager] Match ${matchId} COUNTDOWN started for room ${formattedCode} (${headStartDuration}s Head-Start)`
     );
 
-    // 4. Start Authoritative 1Hz Game Loop
+    // 4. Start Authoritative 1Hz Game Loop and Spatial Distance Engine
     session.timerInterval = setInterval(() => {
       this.handleClockTick(io, formattedCode);
     }, 1000);
+
+    geoService.startSpatialLoop(formattedCode, io);
 
     this.activeMatches.set(formattedCode, session);
 
@@ -269,6 +272,7 @@ export class GameManager {
     }
 
     this.activeMatches.delete(formattedCode);
+    geoService.stopSpatialLoop(formattedCode);
     return endedPayload;
   }
 
@@ -282,6 +286,7 @@ export class GameManager {
       clearInterval(session.timerInterval);
     }
     this.activeMatches.delete(formattedCode);
+    geoService.stopSpatialLoop(formattedCode);
   }
 
   /**
@@ -294,6 +299,7 @@ export class GameManager {
       }
     }
     this.activeMatches.clear();
+    geoService.resetAll();
   }
 }
 

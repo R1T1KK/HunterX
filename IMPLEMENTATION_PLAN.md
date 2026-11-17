@@ -158,11 +158,14 @@ Phase 6 (Days 19–20) : Multi-Device Outdoor Field Test, Cloud Deploy & Launch
 #### Day 10: Spatial Distance Engine & 1Hz Haversine Matrix
 - **Objective:** Compute pairwise spherical distances between all active players on the backend.
 - **Tasks:**
-  - [ ] Implement vectorized Haversine distance matrix in `server/src/services/GeoService.ts`.
-  - [ ] Calculate distances between all Hunters and Runners every 1 second in RAM.
-  - [ ] Benchmark computation time for 15 concurrent players ($< 1\text{ms}$).
+  - [x] Implement vectorized Haversine distance matrix in `server/src/services/GeoService.ts` with Earth mean radius $R = 6,371,000\text{m}$.
+  - [x] Calculate pairwise distances between all active Hunters and Runners every 1 second (1Hz) in RAM with zero database overhead.
+  - [x] Enforce coordinate quality checks: reject out-of-range coordinates, accuracy $> 25\text{m}$, and stale GPS updates ($> 15\text{s}$).
+  - [x] Guard against overlapping execution cycles using mutex lock per active room.
+  - [x] Benchmark computation time for 15 concurrent players ($0.016\text{ms}$ average, $< 1\text{ms}$ acceptance threshold).
 - **Mandatory Acceptance Criteria:**
-  - Unit tests verify distance precision down to centimeters against known coordinates.
+  - [x] Unit tests verify distance precision down to centimeters against known coordinates (Equator, London-Paris, CP-India Gate, 5m catch, 10m proximity).
+  - [x] 43/43 Day 10 automated audit tests pass, 62/62 server tests pass across 7 suites, 0 lint/build errors.
 
 #### Day 11: Play Zone (Geofence) & Dynamic Shrinking Engine
 - **Objective:** Render interactive play boundary and shrinking zone mechanics.

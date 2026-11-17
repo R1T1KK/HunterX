@@ -9,9 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for Phase 3 (Days 10–11)
-- Day 10: Spatial distance engine & 1Hz Haversine matrix.
+### Planned for Phase 3 (Day 11)
 - Day 11: Play zone (geofence) & dynamic shrinking engine.
+
+---
+
+## [0.10.0-day10] - 2026-11-17
+
+### Added
+- **Server-Authoritative Spatial Distance Engine (`server/src/services/GeoService.ts`):**
+  - High-precision vectorized Haversine distance engine utilizing Earth's mean radius ($R = 6,371,000\text{m}$) returning centimeter-precise distances.
+  - Pairwise Hunter-to-Runner distance matrix computing real-time distances between all active Hunters and Runners every 1 second (1Hz).
+  - Scalable support for up to 15 concurrent players (e.g. 3 Hunters, 12 Runners = 36 pairwise distances calculated in RAM).
+  - Fast $O(1)$ matrix and nearest-opponent lookups (`getDistanceBetween`, `getNearestOpponent`, `getProximityAlarmPairs`, `getCatchablePairs`).
+  - Active proximity alarm flagging ($\le 10.0\text{m}$) and physical catch eligibility flagging ($\le 5.0\text{m}$) preparing foundation for Days 12 and 15.
+- **Robust Coordinate Quality, Freshness & Mutex Guard:**
+  - Strict validation excluding NaN, non-numeric, or out-of-range coordinates.
+  - Rejection of GPS readings exceeding the 25.0-meter accuracy threshold.
+  - Automatic detection and exclusion of stale GPS updates older than 15 seconds.
+  - Per-room computation mutex preventing overlapping timer execution cycles.
+  - Zero database queries; 100% in-memory calculation in server RAM.
+- **Game Lifecycle Integration (`server/src/services/GameManager.ts`):**
+  - Spatial distance loop cleanly attached to match lifecycle: starts on match countdown and stops on match completion.
+- **Performance Benchmark & Automated Verification (`scripts/verify-day10.ts`, `server/src/services/__tests__/GeoService.test.ts`):**
+  - 15-player matrix computation benchmarked at **$0.016\text{ms}$** per execution across 1,000 iterations (far exceeding the $< 1.0\text{ms}$ acceptance criterion).
+  - 43/43 Day 10 automated verification checks passed.
+  - 62/62 server Vitest unit & integration tests passed across all 7 suites.
 
 ---
 

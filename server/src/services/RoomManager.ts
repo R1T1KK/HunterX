@@ -75,41 +75,7 @@ export class RoomError extends Error {
 // Unambiguous character set for high-contrast mobile readability
 const ROOM_CODE_CHARSET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
-export const HOUSE_RULES_PRESETS: Record<
-  Exclude<RulesPreset, "CUSTOM">,
-  Omit<HouseRules, "preset">
-> = {
-  QUICK: {
-    roundLengthMinutes: 5,
-    headStartSeconds: 15,
-    pingIntervalSeconds: 30,
-    playZoneEnabled: true,
-    zoneSizeMeters: 250,
-    zoneShrinks: false,
-    zoneShrinkIntervalMinutes: 5,
-    huntersCanTalk: true,
-  },
-  STANDARD: {
-    roundLengthMinutes: 10,
-    headStartSeconds: 30,
-    pingIntervalSeconds: 60,
-    playZoneEnabled: true,
-    zoneSizeMeters: 500,
-    zoneShrinks: false,
-    zoneShrinkIntervalMinutes: 5,
-    huntersCanTalk: true,
-  },
-  BIG_PARK: {
-    roundLengthMinutes: 20,
-    headStartSeconds: 60,
-    pingIntervalSeconds: 90,
-    playZoneEnabled: true,
-    zoneSizeMeters: 1000,
-    zoneShrinks: true,
-    zoneShrinkIntervalMinutes: 5,
-    huntersCanTalk: true,
-  },
-};
+export { HOUSE_RULES_PRESETS };
 
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();
